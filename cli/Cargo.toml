@@ -1,0 +1,14 @@
+[package]
+name = "cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.21", features = ["derive", "env"] }
+util = { version = "*", path = "../util"}
+api  = { version = "*", path = "../api"}
+env_logger = "0.11.5"
+tokio.workspace = true
+chrono.workspace = true
+envy.workspace = true
+dotenv.workspace = true

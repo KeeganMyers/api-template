@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+
+members = [
+ "api",
+ "cli",
+ "model",
+ "util",
+]
+
+[workspace.dependencies]
+sqlx = { version = "0.8.2", features = ["postgres", "runtime-tokio", "uuid", "chrono"] }
+serde = { version = "1.0.215", features = ["derive"] }
+tokio = { version = "1.41.1", features = ["full"] }
+tokio-test = "0.4.4"
+chrono = { version = "0.4.38", features = ["serde"] }
+uuid = { version = "1.11.0", features = ["v7","serde"] }
+thiserror = "2.0.3"
+env_logger = "0.11.5"
+log = { version = "0.4.22", features = ["serde", "std"] }
+envy = "0.4.2"
+async-trait = "0.1.83"
+dotenv = "0.15.0"

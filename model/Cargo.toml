@@ -1,0 +1,16 @@
+[package]
+name = "model"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sqlx.workspace = true
+uuid.workspace = true
+thiserror.workspace = true
+util = {path = "../util"}
+chrono.workspace = true
+serde.workspace = true
+tokio = { workspace = true, features = ["full"] }
+
+[dev-dependencies]
+tokio-test = "0.4.4"

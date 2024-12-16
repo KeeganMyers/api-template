@@ -1,0 +1,12 @@
+[package]
+name = "util"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-trait.workspace = true
+dotenv.workspace = true
+envy = "0.4.2"
+serde.workspace = true
+sqlx.workspace = true
+thiserror.workspace = true
