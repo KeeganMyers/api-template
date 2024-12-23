@@ -8,9 +8,15 @@ sqlx.workspace = true
 uuid.workspace = true
 thiserror.workspace = true
 util = {path = "../util"}
+derive_model = {version = "*", path = "../derive_model"}
+derive_query = {version = "*", path = "../derive_query"}
+derive_log_and_parse = {version = "*", path = "../derive_log_and_parse"}
 chrono.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 tokio = { workspace = true, features = ["full"] }
+utoipa.workspace = true
+reqwest.workspace = true
 
 [dev-dependencies]
 tokio-test = "0.4.4"

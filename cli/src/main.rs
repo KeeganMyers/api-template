@@ -1,10 +1,11 @@
+use api::{start_server, ApiState};
 use chrono::Utc;
 use clap::Parser;
+use dotenv::dotenv;
 use std::error::Error;
 use std::fs::File;
-use util::{AppState,env::Env, store::RWDB};
-use api::{ApiState,start_server};
-use dotenv::{dotenv};
+use util::store::RWDB;
+use util::{env::Env, AppState};
 
 const CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -39,7 +40,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let app_state = ApiState::from_env(env).await?;
             let server_handle = start_server(app_state);
             let _ = server_handle.await;
-        },
+        }
         Command::MigrateSql => {
             let env = Env::from_env()?;
             env_logger::init();

@@ -10,3 +10,5 @@ envy = "0.4.2"
 serde.workspace = true
 sqlx.workspace = true
 thiserror.workspace = true
+utoipa.workspace = true
+uuid.workspace = true

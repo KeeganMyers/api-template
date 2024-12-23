@@ -1,10 +1,20 @@
-use super::{error::ModelError, Role};
+use super::{error::ModelError, Paging, Role};
 use chrono::{DateTime, Utc};
+use derive_model::Model;
+use derive_query::Query;
 use serde::{Deserialize, Serialize};
-use util::{error::UtilError,store::{RWDB,RODB},AppState};
+use sqlx::{Postgres, QueryBuilder};
+use util::{
+    error::UtilError,
+    macros::make_sort,
+    store::{Model, PaginatedResult, Pagination, SortDirection, ToSqlQuery, ToSqlSort, RODB, RWDB},
+    JsonNum,
+};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Default, Clone, Model)]
+#[model(table_name = "users")]
 pub struct User {
     pub id: Uuid,
     pub created_at: DateTime<Utc>,
@@ -36,6 +46,26 @@ pub struct UpdateUser {
     pub email: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone)]
+pub enum SortColumn {
+    #[default]
+    CreatedAt,
+    UpdatedAt,
+    DisplayName,
+}
+
+make_sort!(UserSort, SortColumn);
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone, Query)]
+pub struct Query {
+    display_name: Option<String>,
+    email: Option<String>,
+    #[serde(flatten)]
+    sort: Option<UserSort>,
+    #[serde(flatten)]
+    paging: Option<Paging>,
+}
+
 impl User {
     pub async fn create(new_user: NewUser, db: RWDB) -> Result<User, ModelError> {
         sqlx::query_as!(
@@ -48,16 +78,13 @@ impl User {
             new_user.role as Role,
             new_user.display_name,
             new_user.email
-            )
-            .fetch_one(db.get_conn())
-            .await
-            .map_err(|e| ModelError::from(UtilError::from(e)))
+        )
+        .fetch_one(db.get_conn())
+        .await
+        .map_err(|e| ModelError::from(UtilError::from(e)))
     }
 
-    pub async fn update(
-        updated_user: UpdateUser,
-        db: RWDB
-    ) -> Result<User, ModelError> {
+    pub async fn update(updated_user: UpdateUser, db: RWDB) -> Result<User, ModelError> {
         sqlx::query_as!(
             Self,
             r#"
@@ -71,10 +98,10 @@ impl User {
             updated_user.last_login,
             updated_user.display_name,
             updated_user.email
-            )
-            .fetch_one(db.get_conn())
-            .await
-            .map_err(|e| ModelError::from(UtilError::from(e)))
+        )
+        .fetch_one(db.get_conn())
+        .await
+        .map_err(|e| ModelError::from(UtilError::from(e)))
     }
 
     pub async fn get(id: Uuid, db: RODB) -> Result<User, ModelError> {
@@ -86,13 +113,13 @@ impl User {
             where id = $1
             "#,
             id
-            )
-            .fetch_one(db.get_conn())
-            .await
-            .map_err(|e| ModelError::from(UtilError::from(e)))
+        )
+        .fetch_one(db.get_conn())
+        .await
+        .map_err(|e| ModelError::from(UtilError::from(e)))
     }
 
-    pub async fn get_paginated(limit: i64,offset: i64,db: RODB) -> Result<Vec<User>, ModelError> {
+    pub async fn get_paginated(limit: i64, offset: i64, db: RODB) -> Result<Vec<User>, ModelError> {
         sqlx::query_as!(
             Self,
             r#"
@@ -103,10 +130,10 @@ impl User {
             "#,
             limit,
             offset
-            )
-            .fetch_all(db.get_conn())
-            .await
-            .map_err(|e| ModelError::from(UtilError::from(e)))
+        )
+        .fetch_all(db.get_conn())
+        .await
+        .map_err(|e| ModelError::from(UtilError::from(e)))
     }
 }
 
@@ -114,18 +141,14 @@ impl User {
 mod test {
 
     #[tokio::test]
-    async fn create() {
-    }
+    async fn create() {}
 
     #[tokio::test]
-    async fn update() {
-    }
+    async fn update() {}
 
     #[tokio::test]
-    async fn get() {
-    }
+    async fn get() {}
 
     #[tokio::test]
-    async fn get_paginated() {
-    }
+    async fn get_paginated() {}
 }

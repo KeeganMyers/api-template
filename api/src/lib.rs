@@ -1,15 +1,11 @@
 mod error;
-mod middleware;
 mod extractors;
+mod middleware;
 
 use crate::error::ApiError;
 use async_trait::async_trait;
-use axum::{
-    http::StatusCode,
-    routing::{get},
-    Router,
-};
-use log::{info};
+use axum::{http::StatusCode, routing::get, Router};
+use log::info;
 use std::{
     net::{SocketAddr, TcpListener},
     sync::Arc,
@@ -19,6 +15,8 @@ use util::{
     store::{RODB, RWDB},
     AppState,
 };
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 async fn healthcheck() -> (StatusCode, &'static str) {
     (StatusCode::OK, "OK")
@@ -26,7 +24,9 @@ async fn healthcheck() -> (StatusCode, &'static str) {
 
 pub(crate) fn routes(app_state: Arc<ApiState>) -> Router {
     Router::new()
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .route("/healthcheck", get(healthcheck))
+        .route("/test", get(healthcheck))
         //.layer(from_fn_with_state(app_state.clone(),cache_request))
         .with_state(app_state)
 }
@@ -38,16 +38,20 @@ pub struct ApiState {
     pub env: Env,
 }
 
+#[derive(OpenApi)]
+#[openapi(paths(), components(schemas()))]
+pub struct ApiDoc;
+
 #[async_trait]
 impl AppState for ApiState {
     type StateType = ApiState;
     type ErrorType = ApiError;
 
-    async fn from_env(env: Env) -> Result<Self::StateType,Self::ErrorType> {
+    async fn from_env(env: Env) -> Result<Self::StateType, Self::ErrorType> {
         Ok(Self {
             rw_db: RWDB::connect(&env).await?,
             ro_db: RODB::connect(&env).await?,
-            env
+            env,
         })
     }
 
