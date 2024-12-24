@@ -3,12 +3,10 @@ use chrono::{DateTime, Utc};
 use derive_model::Model;
 use derive_query::Query;
 use serde::{Deserialize, Serialize};
-use sqlx::{Postgres, QueryBuilder};
 use util::{
     error::UtilError,
     macros::make_sort,
-    store::{Model, PaginatedResult, Pagination, SortDirection, ToSqlQuery, ToSqlSort, RODB, RWDB},
-    JsonNum,
+    store::{PaginatedResult, RODB, RWDB},
 };
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -119,21 +117,11 @@ impl User {
         .map_err(|e| ModelError::from(UtilError::from(e)))
     }
 
-    pub async fn get_paginated(limit: i64, offset: i64, db: RODB) -> Result<Vec<User>, ModelError> {
-        sqlx::query_as!(
-            Self,
-            r#"
-            SELECT id,created_at,updated_at,last_login,role as "role!: Role",display_name,email
-            FROM users
-            FETCH NEXT $1 ROWS ONLY
-            OFFSET $2
-            "#,
-            limit,
-            offset
-        )
-        .fetch_all(db.get_conn())
-        .await
-        .map_err(|e| ModelError::from(UtilError::from(e)))
+    pub async fn get_paginated(
+        query: Query,
+        db: &RODB,
+    ) -> Result<PaginatedResult<Self>, ModelError> {
+        Self::query(query, None, db).await.map_err(ModelError::from)
     }
 }
 

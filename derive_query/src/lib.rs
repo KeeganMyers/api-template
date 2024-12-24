@@ -87,6 +87,8 @@ fn derive_query_struct(ident: Ident, struct_data: &DataStruct) -> TokenStream {
     if sort_present {
         sort_ast.extend(
             quote!(
+            use util::JsonNum;
+
             impl ToSqlSort for #ident {
                     fn direction(&self) -> String {
                         self.sort.clone().unwrap_or_default().direction

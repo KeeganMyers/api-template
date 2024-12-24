@@ -4,10 +4,12 @@ pub mod macros;
 pub mod store;
 use utoipa::ToSchema;
 
-use async_trait::async_trait;
 use env::{Env, PostgresConfig};
 use serde::{Deserialize, Serialize};
 use store::{RODB, RWDB};
+
+#[cfg(any(test, debug_assertions))]
+pub mod tests;
 
 pub trait AppConfig {
     fn get_rw_store_settings(&self) -> &PostgresConfig;
@@ -22,7 +24,7 @@ pub enum JsonNum {
     U(u64),
 }
 
-#[async_trait]
+#[allow(async_fn_in_trait)]
 pub trait AppState {
     type StateType;
     type ErrorType;

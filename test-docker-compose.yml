@@ -1,0 +1,14 @@
+version: '3'
+networks:
+  api-dev:
+    driver: bridge
+services:
+  test-database:
+    image: ghcr.io/fboulnois/pg_uuidv7:1.6.0
+    environment:
+      POSTGRES_USER: rwusertest
+      POSTGRES_PASSWORD: test 
+      PGPASSWORD: test
+      POSTGRES_DB: api_template
+    ports:
+      - 5436:5432

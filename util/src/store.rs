@@ -62,7 +62,22 @@ pub trait Model: Sized + Send {
         qb
     }
 
-    async fn query<Q>(query: Q, db: RODB) -> Result<PaginatedResult<Self>, UtilError>
+    fn build_query_from_base<Q>(query: &Q, base_query: &str) -> QueryBuilder<'static, Postgres>
+    where
+        Q: ToSqlQuery + Pagination + ToSqlSort,
+    {
+        let mut qb = QueryBuilder::new(base_query);
+        query.add_where(&mut qb);
+        query.add_sort(&mut qb);
+        query.add_paging(&mut qb);
+        qb
+    }
+
+    async fn query<Q>(
+        query: Q,
+        query_str: Option<String>,
+        db: &RODB,
+    ) -> Result<PaginatedResult<Self>, UtilError>
     where
         Q: ToSqlQuery + Pagination + ToSqlSort;
 
@@ -96,19 +111,6 @@ pub trait ToSqlQuery {
 }
 
 pub trait ToSqlSort {
-    /*
-    fn direction(&self) -> String {
-        self.direction
-            .as_ref()
-            .and_then(|s| serde_json::to_string(&s).ok())
-            .unwrap_or("asc".to_owned())
-    }
-
-    fn column(&self) -> String {
-        serde_json::to_string(&self.sort_by.clone().unwrap_or_default()).unwrap_or_default()
-    }
-    */
-
     fn direction(&self) -> String;
     fn column(&self) -> String;
     fn add_sort(&self, qb: &mut QueryBuilder<Postgres>) {

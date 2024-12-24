@@ -58,12 +58,11 @@ mod test {
     use super::*;
     use derive_model::Model;
     use derive_query::Query;
-    use sqlx::{FromRow, Postgres, QueryBuilder};
+    use sqlx::FromRow;
     use util::{
         error::UtilError,
         macros::make_sort,
-        store::{Model, PaginatedResult, Pagination, SortDirection, ToSqlQuery, ToSqlSort, RODB},
-        JsonNum,
+        store::{PaginatedResult, RODB},
     };
 
     #[derive(FromRow, Model)]

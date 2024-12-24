@@ -4,12 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = "0.7.7"
+axum.workspace = true
 axum-server = "0.7.1"
 thiserror.workspace = true
 serde.workspace = true
 util = {version = "*", path = "../util"}
 model = {version = "*", path = "../model"}
+derive_axum_errors = {version = "*", path = "../derive_axum_errors"}
 env_logger.workspace = true
 log.workspace = true
 async-trait.workspace = true
@@ -17,3 +18,4 @@ utoipa-swagger-ui = { version = "8.1.0", features = ["axum"] }
 utoipa.workspace = true
 serde_json.workspace = true
 reqwest = "0.12.9"
+tracing.workspace = true

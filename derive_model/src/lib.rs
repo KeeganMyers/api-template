@@ -63,6 +63,9 @@ fn derive_model_struct(ident: Ident, input: &DeriveInput, struct_data: &DataStru
     }
 
     quote! {
+        use sqlx::{Postgres, QueryBuilder};
+        use util::store::{Model, Pagination, SortDirection, ToSqlQuery, ToSqlSort};
+
         impl Model for #ident {
             fn fields() -> Vec<String> {
                 vec![#(#fields.to_owned()),*]
@@ -76,10 +79,14 @@ fn derive_model_struct(ident: Ident, input: &DeriveInput, struct_data: &DataStru
                 #table_name.to_owned()
             }
 
-            async fn query<Q>(query: Q,db: RODB) -> Result<PaginatedResult<Self>,UtilError>
+            async fn query<Q>(query: Q,query_str: Option<String>,db: &RODB) -> Result<PaginatedResult<Self>,UtilError>
                 where Q: ToSqlQuery + Pagination + ToSqlSort
             {
-                let mut qb = Self::build_query(&query);
+                let mut qb =  if let Some(qs) = query_str {
+                    Self::build_query_from_base(&query,&qs)
+                } else {
+                    Self::build_query(&query)
+                };
                 let built_query = qb.build_query_as::<'_,Self>();
                 let data = built_query
                     .fetch_all(db.get_conn())

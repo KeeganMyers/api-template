@@ -4,6 +4,7 @@ resolver = "2"
 members = [
  "api",
  "cli", "derive_model","derive_query","derive_log_and_parse",
+ "derive_axum_errors",
  "model",
  "util",
 ]
@@ -24,3 +25,5 @@ async-trait = "0.1.83"
 dotenv = "0.15.0"
 utoipa = { version = "5.3.0", features = ["uuid", "macros", "chrono", "yaml", "debug", "decimal", "config"] }
 serde_json = "1.0.134"
+tracing = "0.1.41"
+axum = "0.7.7"

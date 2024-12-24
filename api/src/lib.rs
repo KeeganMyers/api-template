@@ -3,13 +3,13 @@ mod extractors;
 mod middleware;
 
 use crate::error::ApiError;
-use async_trait::async_trait;
 use axum::{http::StatusCode, routing::get, Router};
 use log::info;
 use std::{
     net::{SocketAddr, TcpListener},
     sync::Arc,
 };
+use tracing::instrument;
 use util::{
     env::Env,
     store::{RODB, RWDB},
@@ -18,6 +18,7 @@ use util::{
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+#[instrument]
 async fn healthcheck() -> (StatusCode, &'static str) {
     (StatusCode::OK, "OK")
 }
@@ -26,7 +27,6 @@ pub(crate) fn routes(app_state: Arc<ApiState>) -> Router {
     Router::new()
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .route("/healthcheck", get(healthcheck))
-        .route("/test", get(healthcheck))
         //.layer(from_fn_with_state(app_state.clone(),cache_request))
         .with_state(app_state)
 }
@@ -42,7 +42,6 @@ pub struct ApiState {
 #[openapi(paths(), components(schemas()))]
 pub struct ApiDoc;
 
-#[async_trait]
 impl AppState for ApiState {
     type StateType = ApiState;
     type ErrorType = ApiError;

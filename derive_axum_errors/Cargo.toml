@@ -1,0 +1,20 @@
+[package]
+name = "derive_axum_errors"
+version = "0.80.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1"
+quote = "1"
+proc-macro2 = "1"
+
+[dev-dependencies]
+axum.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+
+[package.metadata.cargo-machete]
+ignored = ["serde","serde_json","tokio","tracing"]
