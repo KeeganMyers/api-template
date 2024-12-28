@@ -55,7 +55,18 @@ pub struct ApiState {
 }
 
 #[derive(OpenApi)]
-#[openapi(paths(), components(schemas()))]
+#[openapi(
+    paths(
+        auth::auth_login,
+        auth::auth_signup,
+        auth::auth_callback,
+        auth::get_auth_user,
+        auth::get_auth_users,
+        auth::delete_auth_user,
+        auth::add_auth_user,
+    ),
+    components(schemas())
+)]
 pub struct ApiDoc;
 
 impl AppState for ApiState {

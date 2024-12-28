@@ -58,14 +58,13 @@ mod test {
     use super::*;
     use derive_model::Model;
     use derive_query::Query;
-    use sqlx::FromRow;
     use util::{
         error::UtilError,
         macros::make_sort,
         store::{PaginatedResult, RODB},
     };
 
-    #[derive(FromRow, Model)]
+    #[derive(sqlx::FromRow, Model)]
     #[allow(dead_code)]
     #[model(table_name = "test_tbl")]
     pub struct TestModel {

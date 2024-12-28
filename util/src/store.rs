@@ -35,7 +35,7 @@ pub trait Model: Sized + Send {
     }
     fn base_select() -> String {
         format!(
-            "SELECT {} FROM {} ",
+            "SELECT {},CAST(COUNT(*) AS BigInt) AS total FROM {} ",
             Self::select_fields_str(),
             Self::table_name()
         )
@@ -81,14 +81,18 @@ pub trait Model: Sized + Send {
     where
         Q: ToSqlQuery + Pagination + ToSqlSort;
 
-    fn paginated_result<Q>(data: Vec<Self>, query: Q) -> Result<PaginatedResult<Self>, UtilError>
+    fn paginated_result<Q>(
+        data: Vec<Self>,
+        total: Option<i64>,
+        query: Q,
+    ) -> Result<PaginatedResult<Self>, UtilError>
     where
         Q: ToSqlQuery + Pagination + ToSqlSort,
     {
         Ok(PaginatedResult {
             page: query.page(),
             limit: query.limit(),
-            total: 0,
+            total: total.unwrap_or_default(),
             data,
         })
     }

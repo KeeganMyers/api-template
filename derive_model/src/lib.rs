@@ -63,7 +63,7 @@ fn derive_model_struct(ident: Ident, input: &DeriveInput, struct_data: &DataStru
     }
 
     quote! {
-        use sqlx::{Postgres, QueryBuilder};
+        use sqlx::{Postgres, FromRow,Row,QueryBuilder};
         use util::store::{Model, Pagination, SortDirection, ToSqlQuery, ToSqlSort};
 
         impl Model for #ident {
@@ -87,14 +87,17 @@ fn derive_model_struct(ident: Ident, input: &DeriveInput, struct_data: &DataStru
                 } else {
                     Self::build_query(&query)
                 };
-                let built_query = qb.build_query_as::<'_,Self>();
+                let built_query = qb.build();
                 let data = built_query
                     .fetch_all(db.get_conn())
                     .await
-                    .map_err(UtilError::from)?
-                    .into_iter()
+                    .map_err(UtilError::from)?;
+                let total: Option<i64> = data.iter().next().map(|r| r.get("total"));
+                let records = data
+                    .iter()
+                    .filter_map(|r| Self::from_row(r).ok())
                     .collect::<Vec<Self>>();
-                Self::paginated_result(data,query)
+                Self::paginated_result(records,total,query)
             }
         }
     }
