@@ -1,9 +1,16 @@
-use crate::{error::ApiError, ApiState};
-use axum::{debug_handler, extract::State, Json};
+use crate::{error::ApiError, extractors::auth_user::AuthUser, ApiState};
+use axum::{
+    debug_handler,
+    extract::{Path, Query, State},
+    Json,
+};
+use base64::engine::Engine;
 use casdoor_rust_sdk::{AuthService, CasdoorConfig};
 use casdoor_rust_sdk::{CasdoorUser, UserService};
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use util::AppState;
+use tokio::task;
+use util::{AppState, B64_ENGINE};
 
 #[utoipa::path(
     post,
@@ -56,8 +63,15 @@ pub async fn auth_signup(State(api_state): State<Arc<ApiState>>) -> Result<Json<
     Err(ApiError::AuthConfigNotConfigured)
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CallbackQuery {
+    pub code: String,
+    pub state: String,
+}
+
+pub type JWT = String;
 #[utoipa::path(
-    post,
+    get,
     path = "/auth_callback",
     params(
         ("code" = String, Path, description = "auth code returned by auth service")
@@ -66,23 +80,39 @@ pub async fn auth_signup(State(api_state): State<Arc<ApiState>>) -> Result<Json<
 #[debug_handler]
 pub async fn auth_callback(
     State(api_state): State<Arc<ApiState>>,
-    code: String,
-) -> Result<Json<CasdoorUser>, ApiError> {
+    Query(query): Query<CallbackQuery>,
+) -> Result<Json<JWT>, ApiError> {
     if let Some(auth) = api_state.get_env().auth.clone() {
-        let config = CasdoorConfig::new(
-            auth.endpoint,
-            auth.client_id,
-            auth.client_secret,
-            auth.certificate,
-            auth.org_name,
-            auth.app_name,
-        );
-        let auth_service = AuthService::new(&config);
-        let token = auth_service.get_auth_token(code).map_err(ApiError::from)?;
-        let user = auth_service
-            .parse_jwt_token(token)
-            .map_err(ApiError::from)?;
-        return Ok(Json(user));
+        let token_result = task::spawn_blocking(move || {
+            let config = CasdoorConfig::new(
+                auth.endpoint,
+                auth.client_id,
+                auth.client_secret,
+                auth.certificate,
+                auth.org_name,
+                auth.app_name,
+            );
+            let auth_service = AuthService::new(&config);
+            let token = auth_service.get_auth_token(query.code).map_err(|e| {
+                let err_msg = e.to_string();
+                log::error!("get_auth_token() error: {}", err_msg);
+                err_msg
+            })?;
+
+            let _user = auth_service.parse_jwt_token(token.clone()).map_err(|e| {
+                let err_msg = e.to_string();
+                log::error!("parse_jwt_token() error: {}", err_msg);
+                err_msg
+            })?;
+            Ok(B64_ENGINE.encode(token))
+        })
+        .await
+        .map_err(ApiError::from)?;
+
+        return match token_result {
+            Ok(token) => Ok(Json(token)),
+            Err(e) => Err(ApiError::Auth(e)),
+        };
     }
     Err(ApiError::AuthConfigNotConfigured)
 }
@@ -97,7 +127,8 @@ pub async fn auth_callback(
 #[debug_handler]
 pub async fn get_auth_user(
     State(api_state): State<Arc<ApiState>>,
-    name: String,
+    Path(name): Path<String>,
+    _auth_user: AuthUser,
 ) -> Result<Json<CasdoorUser>, ApiError> {
     if let Some(auth) = api_state.get_env().auth.clone() {
         let config = CasdoorConfig::new(
@@ -109,7 +140,7 @@ pub async fn get_auth_user(
             auth.app_name,
         );
         let user_service = UserService::new(&config);
-        let user = user_service.get_user(name).await.unwrap();
+        let user = user_service.get_user(name).await?;
         return Ok(Json(user));
     }
 
@@ -120,6 +151,7 @@ pub async fn get_auth_user(
 #[debug_handler]
 pub async fn get_auth_users(
     State(api_state): State<Arc<ApiState>>,
+    _auth_user: AuthUser,
 ) -> Result<Json<Vec<CasdoorUser>>, ApiError> {
     if let Some(auth) = api_state.get_env().auth.clone() {
         let config = CasdoorConfig::new(
@@ -141,6 +173,7 @@ pub async fn get_auth_users(
 #[debug_handler]
 pub async fn delete_auth_user(
     State(api_state): State<Arc<ApiState>>,
+    _auth_user: AuthUser,
     user: Json<CasdoorUser>,
 ) -> Result<Json<u16>, ApiError> {
     if let Some(auth) = api_state.get_env().auth.clone() {
@@ -162,6 +195,7 @@ pub async fn delete_auth_user(
 #[utoipa::path(post, path = "/auth_user")]
 pub async fn add_auth_user(
     State(api_state): State<Arc<ApiState>>,
+    _auth_user: AuthUser,
     user: Json<CasdoorUser>,
 ) -> Result<Json<u16>, ApiError> {
     if let Some(auth) = api_state.get_env().auth.clone() {

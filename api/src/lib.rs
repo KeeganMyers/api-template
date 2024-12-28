@@ -35,7 +35,7 @@ pub(crate) fn routes(app_state: Arc<ApiState>) -> Router {
         .route("/healthcheck", get(healthcheck))
         .route("/auth_login", post(auth::auth_login))
         .route("/auth_signup", post(auth::auth_signup))
-        .route("/auth_callback", post(auth::auth_callback))
+        .route("/auth_callback", get(auth::auth_callback))
         .route("/auth_users/:name", get(auth::get_auth_user))
         .route(
             "/auth_users",

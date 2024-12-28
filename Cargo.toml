@@ -6,7 +6,7 @@ members = [
  "cli", "derive_model","derive_query","derive_log_and_parse",
  "derive_axum_errors",
  "model",
- "util",
+ "util", "broker",
 ]
 
 [workspace.dependencies]
@@ -30,3 +30,4 @@ axum = {version = "0.7.7", features = ["macros"]}
 casdoor-rust-sdk = "1.3.0"
 deadpool-redis = { version = "0.18.0", features = ["serde", "cluster", "tokio"] }
 redis = { version = "0.27.6", features = ["cluster", "tokio-native-tls-comp", "native-tls"] }
+base64 = "0.22.1"

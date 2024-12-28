@@ -5,9 +5,16 @@ pub mod store;
 use crate::store::CacheLayer;
 use utoipa::ToSchema;
 
+use base64::{
+    alphabet,
+    engine::{self, general_purpose},
+};
 use env::{Env, PostgresConfig};
 use serde::{Deserialize, Serialize};
 use store::{RODB, RWDB};
+
+pub const B64_ENGINE: engine::GeneralPurpose =
+    engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
 
 #[cfg(any(test, debug_assertions))]
 pub mod tests;

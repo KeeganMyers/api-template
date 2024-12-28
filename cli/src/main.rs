@@ -35,8 +35,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
     match Command::parse() {
         Command::Api => {
-            let env = envy::from_env::<Env>()?;
             env_logger::init();
+            let env = Env::from_env()?;
             let app_state = ApiState::from_env(env).await?;
             let server_handle = start_server(app_state);
             let _ = server_handle.await;

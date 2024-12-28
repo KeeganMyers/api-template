@@ -32,7 +32,7 @@ pub struct Auth {
     pub org_name: String,
     #[serde(rename = "auth_app_name")]
     pub app_name: Option<String>,
-    #[serde(rename = "redirect_url")]
+    #[serde(rename = "auth_redirect_url")]
     pub redirect_url: String,
 }
 

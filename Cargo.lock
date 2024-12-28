@@ -116,6 +116,7 @@ dependencies = [
  "axum",
  "axum-core",
  "axum-server",
+ "base64 0.22.1",
  "casdoor-rust-sdk",
  "derive_axum_errors",
  "env_logger",
@@ -126,6 +127,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.3",
+ "tokio",
  "tracing",
  "util",
  "utoipa",
@@ -348,6 +350,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3078c7629b62d3f0439517fa394996acacc5cbc91c5a20d8c658e77abd503a71"
 dependencies = [
  "generic-array",
+]
+
+[[package]]
+name = "broker"
+version = "0.1.0"
+dependencies = [
+ "redis",
+ "tokio",
+ "util",
+ "uuid",
 ]
 
 [[package]]
@@ -3366,6 +3378,7 @@ name = "util"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "base64 0.22.1",
  "deadpool",
  "deadpool-redis",
  "dotenv",

@@ -17,3 +17,4 @@ uuid.workspace = true
 deadpool-redis.workspace = true
 redis.workspace = true
 deadpool = { version = "0.12.1", features = ["serde"] }
+base64.workspace = true
