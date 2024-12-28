@@ -19,10 +19,30 @@ pub struct PostgresConfig {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+pub struct Auth {
+    #[serde(rename = "auth_endpoint")]
+    pub endpoint: String,
+    #[serde(rename = "auth_client_id")]
+    pub client_id: String,
+    #[serde(rename = "auth_client_secret")]
+    pub client_secret: String,
+    #[serde(rename = "auth_cert")]
+    pub certificate: String,
+    #[serde(rename = "auth_org_name")]
+    pub org_name: String,
+    #[serde(rename = "auth_app_name")]
+    pub app_name: Option<String>,
+    #[serde(rename = "redirect_url")]
+    pub redirect_url: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct Env {
     #[serde(flatten)]
     pub postgres: PostgresConfig,
     pub server_port: Option<u16>,
+    #[serde(flatten)]
+    pub auth: Option<Auth>,
 }
 
 impl Env {

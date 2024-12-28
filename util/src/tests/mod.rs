@@ -20,6 +20,7 @@ fn get_test_env() -> Env {
     Env {
         postgres: get_db_config(),
         server_port: Some(3031),
+        auth: None,
     }
 }
 

@@ -1,4 +1,5 @@
 use super::{error::ModelError, Paging, Role};
+use casdoor_rust_sdk::CasdoorUser;
 use chrono::{DateTime, Utc};
 use derive_model::Model;
 use derive_query::Query;
@@ -15,6 +16,7 @@ use uuid::Uuid;
 #[model(table_name = "users")]
 pub struct User {
     pub id: Uuid,
+    pub external_id: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub last_login: Option<DateTime<Utc>>,
@@ -28,6 +30,7 @@ pub struct User {
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Default, Clone)]
 pub struct NewUser {
     pub role: Role,
+    pub external_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -69,10 +72,11 @@ impl User {
         sqlx::query_as!(
             Self,
             r#"
-            INSERT INTO users (role,display_name,email)
-            values ($1,$2,$3)
-            RETURNING id,created_at,updated_at,last_login,role as "role!: Role",display_name,email
+            INSERT INTO users (external_id,role,display_name,email)
+            values ($1,$2,$3,$4)
+            RETURNING id,external_id,created_at,updated_at,last_login,role as "role!: Role",display_name,email
             "#,
+            new_user.external_id,
             new_user.role as Role,
             new_user.display_name,
             new_user.email
@@ -91,7 +95,7 @@ impl User {
             last_login = COALESCE($1,last_login),
             display_name = COALESCE($2,display_name), 
             email = COALESCE($3,email)
-            RETURNING id,created_at,updated_at,last_login,role as "role!: Role",display_name,email
+            RETURNING id,external_id,created_at,updated_at,last_login,role as "role!: Role",display_name,email
             "#,
             updated_user.last_login,
             updated_user.display_name,
@@ -106,7 +110,7 @@ impl User {
         sqlx::query_as!(
             Self,
             r#"
-            SELECT id,created_at,updated_at,last_login,role as "role!: Role",display_name,email
+            SELECT id,external_id,created_at,updated_at,last_login,role as "role!: Role",display_name,email
             FROM users
             where id = $1
             "#,
@@ -122,6 +126,21 @@ impl User {
         db: &RODB,
     ) -> Result<PaginatedResult<Self>, ModelError> {
         Self::query(query, None, db).await.map_err(ModelError::from)
+    }
+
+    pub async fn get_by_auth_user(c_user: CasdoorUser, db: &RODB) -> Result<User, ModelError> {
+        sqlx::query_as!(
+            Self,
+            r#"
+            SELECT id,external_id,created_at,updated_at,last_login,role as "role!: Role",display_name,email
+            FROM users
+            where external_id = $1
+            "#,
+            c_user.id
+        )
+        .fetch_one(db.get_conn())
+        .await
+        .map_err(|e| ModelError::from(UtilError::from(e)))
     }
 }
 

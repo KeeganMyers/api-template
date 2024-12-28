@@ -1,9 +1,15 @@
+mod controllers;
 mod error;
 mod extractors;
 mod middleware;
 
+use crate::controllers::auth;
 use crate::error::ApiError;
-use axum::{http::StatusCode, routing::get, Router};
+use axum::{
+    http::StatusCode,
+    routing::{get, post},
+    Router,
+};
 use log::info;
 use std::{
     net::{SocketAddr, TcpListener},
@@ -27,6 +33,16 @@ pub(crate) fn routes(app_state: Arc<ApiState>) -> Router {
     Router::new()
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .route("/healthcheck", get(healthcheck))
+        .route("/auth_login", post(auth::auth_login))
+        .route("/auth_signup", post(auth::auth_signup))
+        .route("/auth_callback", post(auth::auth_callback))
+        .route("/auth_users/:name", get(auth::get_auth_user))
+        .route(
+            "/auth_users",
+            get(auth::get_auth_users)
+                .delete(auth::delete_auth_user)
+                .post(auth::add_auth_user),
+        )
         //.layer(from_fn_with_state(app_state.clone(),cache_request))
         .with_state(app_state)
 }
