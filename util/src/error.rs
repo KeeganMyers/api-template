@@ -1,3 +1,5 @@
+use deadpool_redis::ConfigError;
+use redis::RedisError;
 use sqlx::error::{Error as SqlxError, ErrorKind as SqlxErrorKind};
 use thiserror::Error as ThisError;
 
@@ -45,10 +47,20 @@ pub enum UtilError {
     SqlCheckFailed(String),
     #[error("Record not found")]
     SqlFailedToFindRecord,
+    #[error(
+        "Env var for Redis not set, host (for single instance) or hosts(for cluster) must be set"
+    )]
+    RedisNotConfigured,
     #[error("Column specified in query not found {0}")]
     SqlFailedToFindColumn(String),
     #[error("Type specified in query not found {0}")]
     SqlFailedToFindType(String),
     #[error(transparent)]
     EnvyError(#[from] envy::Error),
+    #[error(transparent)]
+    DeadpoolRedis(#[from] deadpool::managed::CreatePoolError<ConfigError>),
+    #[error(transparent)]
+    DeadpoolCluserRedis(#[from] deadpool::managed::PoolError<RedisError>),
+    #[error(transparent)]
+    RedisError(#[from] RedisError),
 }

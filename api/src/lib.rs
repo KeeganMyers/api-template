@@ -18,7 +18,7 @@ use std::{
 use tracing::instrument;
 use util::{
     env::Env,
-    store::{RODB, RWDB},
+    store::{CacheLayer, Redis, RODB, RWDB},
     AppState,
 };
 use utoipa::OpenApi;
@@ -52,6 +52,7 @@ pub struct ApiState {
     pub rw_db: RWDB,
     pub ro_db: RODB,
     pub env: Env,
+    pub cache: Redis,
 }
 
 #[derive(OpenApi)]
@@ -77,6 +78,7 @@ impl AppState for ApiState {
         Ok(Self {
             rw_db: RWDB::connect(&env).await?,
             ro_db: RODB::connect(&env).await?,
+            cache: Redis::new(&env).await?,
             env,
         })
     }
@@ -89,6 +91,10 @@ impl AppState for ApiState {
     }
     fn get_env(&self) -> &Env {
         &self.env
+    }
+
+    fn cache(&self) -> Option<&impl CacheLayer> {
+        Some(&self.cache)
     }
 }
 

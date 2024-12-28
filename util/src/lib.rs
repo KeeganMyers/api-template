@@ -2,6 +2,7 @@ pub mod env;
 pub mod error;
 pub mod macros;
 pub mod store;
+use crate::store::CacheLayer;
 use utoipa::ToSchema;
 
 use env::{Env, PostgresConfig};
@@ -33,4 +34,5 @@ pub trait AppState {
     fn get_rw_store(&self) -> &RWDB;
     fn get_ro_store(&self) -> &RODB;
     fn get_env(&self) -> &Env;
+    fn cache(&self) -> Option<&impl CacheLayer>;
 }

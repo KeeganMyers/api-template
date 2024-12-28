@@ -17,6 +17,10 @@ services:
     image: casbin/casdoor-all-in-one 
     ports:
       - 3001:8000
+  redis:
+    image: redis:latest
+    ports:
+      - ${REDIS_PORT}:6379
 
 volumes:
   database-data:

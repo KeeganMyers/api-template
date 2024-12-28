@@ -1,8 +1,8 @@
 use crate::{
     env::{Env, PostgresConfig},
     error::UtilError,
-    store::{RODB, RWDB},
-    AppState,
+    store::{Redis, RODB, RWDB},
+    AppState, CacheLayer,
 };
 
 fn get_db_config() -> PostgresConfig {
@@ -21,6 +21,7 @@ fn get_test_env() -> Env {
         postgres: get_db_config(),
         server_port: Some(3031),
         auth: None,
+        redis: None,
     }
 }
 
@@ -29,6 +30,7 @@ pub struct TestApiState {
     pub rw_db: RWDB,
     pub ro_db: RODB,
     pub env: Env,
+    pub cache: Redis,
 }
 
 impl AppState for TestApiState {
@@ -39,6 +41,7 @@ impl AppState for TestApiState {
         Ok(Self {
             rw_db: RWDB::connect(&env).await?,
             ro_db: RODB::connect(&env).await?,
+            cache: Redis::new(&env).await?,
             env,
         })
     }
@@ -51,6 +54,10 @@ impl AppState for TestApiState {
     }
     fn get_env(&self) -> &Env {
         &self.env
+    }
+
+    fn cache(&self) -> Option<&impl CacheLayer> {
+        Some(&self.cache)
     }
 }
 

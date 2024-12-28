@@ -1,4 +1,13 @@
-use crate::{env::PostgresConfig, error::UtilError, AppConfig};
+use crate::{
+    env::{Env, PostgresConfig},
+    error::UtilError,
+    AppConfig,
+};
+use deadpool_redis::{
+    cluster::{Config as ClusterConfig, Pool as RedisClusterPool, Runtime},
+    redis::cmd,
+    Config as InstanceConfig, Pool as RedisInstancePool,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool, Postgres, QueryBuilder};
 use utoipa::ToSchema;
@@ -177,5 +186,166 @@ impl RWDB {
         let pool = Self::connect(state).await?;
         sqlx::migrate!("../migrations/sql").run(&pool.0).await?;
         Ok(())
+    }
+}
+
+#[allow(async_fn_in_trait)]
+pub trait CacheLayer: Sized {
+    async fn new(env: &Env) -> Result<Self, UtilError>;
+    async fn set_value(
+        &self,
+        key: &str,
+        value: &str,
+        expires: Option<u64>,
+    ) -> Result<(), UtilError>;
+    async fn delete_value(&self, key: &str) -> Result<(), UtilError>;
+    async fn get_value(&self, key: &str) -> Result<String, UtilError>;
+    async fn value_exists(&self, key: &str) -> Result<bool, UtilError>;
+}
+
+#[derive(Clone)]
+pub struct Redis {
+    pool: ConnectionPool,
+}
+
+#[derive(Clone)]
+pub enum ConnectionPool {
+    Cluster(RedisClusterPool),
+    Instance(RedisInstancePool),
+}
+
+impl CacheLayer for Redis {
+    async fn new(env: &Env) -> Result<Self, UtilError> {
+        let redis_env = env.redis.as_ref().expect("Env var for Redis not set, host (for single instance) or hosts(for cluster) must be set");
+        if let Some(url) = &redis_env.host {
+            let url_prefix = if redis_env.insecure == Some("true".to_string()) {
+                "redis"
+            } else {
+                "rediss"
+            };
+            let con_str = format!(
+                "{}://{}:{}",
+                url_prefix,
+                url,
+                redis_env.port.clone().unwrap_or("6379".to_owned())
+            );
+            let cfg = InstanceConfig::from_url(con_str);
+            let pool = cfg
+                .create_pool(Some(Runtime::Tokio1))
+                .map_err(UtilError::from)?;
+            return Ok(Self {
+                pool: ConnectionPool::Instance(pool),
+            });
+        }
+
+        if let Some(url) = &redis_env.hosts {
+            let urls = url
+                .split(',')
+                .map(|s| s.to_owned())
+                .collect::<Vec<String>>();
+            let cfg = ClusterConfig::from_urls(urls);
+            let pool = cfg
+                .create_pool(Some(Runtime::Tokio1))
+                .map_err(UtilError::from)?;
+            return Ok(Self {
+                pool: ConnectionPool::Cluster(pool),
+            });
+        }
+
+        Err(UtilError::RedisNotConfigured)
+    }
+
+    async fn set_value(
+        &self,
+        key: &str,
+        value: &str,
+        expires: Option<u64>,
+    ) -> Result<(), UtilError> {
+        let mut args_vec: Vec<String> = vec![key.into(), value.into()];
+        if let Some(expires) = expires {
+            args_vec.append(&mut vec!["EX".into(), expires.to_string()])
+        };
+        match &self.pool {
+            ConnectionPool::Instance(pool) => {
+                let mut conn = pool.get().await?;
+                cmd("SET")
+                    .arg(&args_vec)
+                    .query_async(&mut conn)
+                    .await
+                    .map_err(UtilError::from)
+            }
+            ConnectionPool::Cluster(pool) => {
+                let mut conn = pool.get().await?;
+                cmd("SET")
+                    .arg(&args_vec)
+                    .query_async(&mut conn)
+                    .await
+                    .map_err(UtilError::from)
+            }
+        }
+    }
+
+    async fn delete_value(&self, key: &str) -> Result<(), UtilError> {
+        match &self.pool {
+            ConnectionPool::Instance(pool) => {
+                let mut conn = pool.get().await?;
+                cmd("DEL")
+                    .arg(&[key])
+                    .query_async(&mut conn)
+                    .await
+                    .map_err(UtilError::from)
+            }
+            ConnectionPool::Cluster(pool) => {
+                let mut conn = pool.get().await?;
+                cmd("DEL")
+                    .arg(&[key])
+                    .query_async(&mut conn)
+                    .await
+                    .map_err(UtilError::from)
+            }
+        }
+    }
+
+    async fn get_value(&self, key: &str) -> Result<String, UtilError> {
+        match &self.pool {
+            ConnectionPool::Instance(pool) => {
+                let mut conn = pool.get().await?;
+                cmd("GET")
+                    .arg(&[key])
+                    .query_async(&mut conn)
+                    .await
+                    .map_err(UtilError::from)
+            }
+            ConnectionPool::Cluster(pool) => {
+                let mut conn = pool.get().await?;
+                cmd("GET")
+                    .arg(&[key])
+                    .query_async(&mut conn)
+                    .await
+                    .map_err(UtilError::from)
+            }
+        }
+    }
+    async fn value_exists(&self, key: &str) -> Result<bool, UtilError> {
+        match &self.pool {
+            ConnectionPool::Instance(pool) => {
+                let mut conn = pool.get().await?;
+                cmd("EXISTS")
+                    .arg(&[key])
+                    .query_async(&mut conn)
+                    .await
+                    .map_err(UtilError::from)
+                    .map(|r: usize| r == 1)
+            }
+            ConnectionPool::Cluster(pool) => {
+                let mut conn = pool.get().await?;
+                cmd("EXISTS")
+                    .arg(&[key])
+                    .query_async(&mut conn)
+                    .await
+                    .map_err(UtilError::from)
+                    .map(|r: usize| r == 1)
+            }
+        }
     }
 }

@@ -37,12 +37,26 @@ pub struct Auth {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+pub struct Redis {
+    #[serde(rename = "redis_hosts")]
+    pub hosts: Option<String>,
+    #[serde(rename = "redis_host")]
+    pub host: Option<String>,
+    #[serde(rename = "redis_port")]
+    pub port: Option<String>,
+    #[serde(rename = "test_redis_insecure")]
+    pub insecure: Option<String>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct Env {
     #[serde(flatten)]
     pub postgres: PostgresConfig,
     pub server_port: Option<u16>,
     #[serde(flatten)]
     pub auth: Option<Auth>,
+    #[serde(flatten)]
+    pub redis: Option<Redis>,
 }
 
 impl Env {
