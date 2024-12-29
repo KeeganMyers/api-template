@@ -69,7 +69,7 @@ pub struct CallbackQuery {
     pub state: String,
 }
 
-pub type JWT = String;
+pub type Jwt = String;
 #[utoipa::path(
     get,
     path = "/auth_callback",
@@ -81,7 +81,7 @@ pub type JWT = String;
 pub async fn auth_callback(
     State(api_state): State<Arc<ApiState>>,
     Query(query): Query<CallbackQuery>,
-) -> Result<Json<JWT>, ApiError> {
+) -> Result<Json<Jwt>, ApiError> {
     if let Some(auth) = api_state.get_env().auth.clone() {
         let token_result = task::spawn_blocking(move || {
             let config = CasdoorConfig::new(
