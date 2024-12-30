@@ -1,7 +1,7 @@
 use deadpool_redis::redis::cmd;
 use tokio::task::JoinHandle;
 use util::store::{CacheLayer, ConnectionPool, Redis};
-use util::{env::Env, error::UtilError, AppState};
+use util::{env::Env, error::UtilError, macros::redis_op, AppState};
 use util::{FromParams, ToParams};
 use uuid::Uuid;
 
@@ -74,24 +74,8 @@ impl BrokerLayer for RedisStream {
         ];
         let mut params = message.to_params();
         xargs.append(&mut params);
-        match self.client.get_conn_pool().await {
-            ConnectionPool::Instance(pool) => {
-                let mut conn = pool.get().await?;
-                let _ = cmd("XADD")
-                    .arg(&xargs)
-                    .query_async::<String>(&mut conn)
-                    .await
-                    .map_err(UtilError::from);
-            }
-            ConnectionPool::Cluster(pool) => {
-                let mut conn = pool.get().await?;
-                let _ = cmd("XADD")
-                    .arg(&xargs)
-                    .query_async::<String>(&mut conn)
-                    .await
-                    .map_err(UtilError::from);
-            }
-        }
+        let client = &self.client;
+        redis_op!(client, cmd("XADD").arg(&xargs), String);
         Ok(())
     }
 

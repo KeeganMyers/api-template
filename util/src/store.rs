@@ -1,12 +1,14 @@
 use crate::{
     env::{Env, PostgresConfig},
     error::UtilError,
+    macros::redis_op,
     AppConfig,
 };
 use deadpool_redis::{
     cluster::{Config as ClusterConfig, Pool as RedisClusterPool, Runtime},
+    redis::aio::ConnectionLike,
     redis::cmd,
-    Config as InstanceConfig, Pool, Pool as RedisInstancePool,
+    Config as InstanceConfig, Pool as RedisInstancePool,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool, Postgres, QueryBuilder};
@@ -206,13 +208,29 @@ pub trait CacheLayer: Sized {
 
 #[derive(Clone)]
 pub struct Redis {
-    pool: ConnectionPool,
+    pub pool: ConnectionPool,
 }
 
 #[derive(Clone)]
 pub enum ConnectionPool {
     Cluster(RedisClusterPool),
     Instance(RedisInstancePool),
+}
+
+impl ConnectionPool {
+    pub async fn get_instance(&self) -> Result<Option<impl ConnectionLike>, UtilError> {
+        if let Self::Instance(pool) = self {
+            return Ok(Some(pool.get().await?));
+        }
+        Ok(None)
+    }
+
+    pub async fn get_cluster(&self) -> Result<Option<impl ConnectionLike>, UtilError> {
+        if let Self::Cluster(pool) = self {
+            return Ok(Some(pool.get().await?));
+        }
+        Ok(None)
+    }
 }
 
 impl CacheLayer for Redis {
@@ -270,87 +288,19 @@ impl CacheLayer for Redis {
         if let Some(expires) = expires {
             args_vec.append(&mut vec!["EX".into(), expires.to_string()])
         };
-        match &self.pool {
-            ConnectionPool::Instance(pool) => {
-                let mut conn = pool.get().await?;
-                cmd("SET")
-                    .arg(&args_vec)
-                    .query_async(&mut conn)
-                    .await
-                    .map_err(UtilError::from)
-            }
-            ConnectionPool::Cluster(pool) => {
-                let mut conn = pool.get().await?;
-                cmd("SET")
-                    .arg(&args_vec)
-                    .query_async(&mut conn)
-                    .await
-                    .map_err(UtilError::from)
-            }
-        }
+        redis_op!(self, cmd("SET").arg(&args_vec))
     }
 
     async fn delete_value(&self, key: &str) -> Result<(), UtilError> {
-        match &self.pool {
-            ConnectionPool::Instance(pool) => {
-                let mut conn = pool.get().await?;
-                cmd("DEL")
-                    .arg(&[key])
-                    .query_async(&mut conn)
-                    .await
-                    .map_err(UtilError::from)
-            }
-            ConnectionPool::Cluster(pool) => {
-                let mut conn = pool.get().await?;
-                cmd("DEL")
-                    .arg(&[key])
-                    .query_async(&mut conn)
-                    .await
-                    .map_err(UtilError::from)
-            }
-        }
+        redis_op!(self, cmd("DEL").arg(&[key]))
     }
 
     async fn get_value(&self, key: &str) -> Result<String, UtilError> {
-        match &self.pool {
-            ConnectionPool::Instance(pool) => {
-                let mut conn = pool.get().await?;
-                cmd("GET")
-                    .arg(&[key])
-                    .query_async(&mut conn)
-                    .await
-                    .map_err(UtilError::from)
-            }
-            ConnectionPool::Cluster(pool) => {
-                let mut conn = pool.get().await?;
-                cmd("GET")
-                    .arg(&[key])
-                    .query_async(&mut conn)
-                    .await
-                    .map_err(UtilError::from)
-            }
-        }
+        redis_op!(self, cmd("get").arg(&[key]))
     }
+
     async fn value_exists(&self, key: &str) -> Result<bool, UtilError> {
-        match &self.pool {
-            ConnectionPool::Instance(pool) => {
-                let mut conn = pool.get().await?;
-                cmd("EXISTS")
-                    .arg(&[key])
-                    .query_async(&mut conn)
-                    .await
-                    .map_err(UtilError::from)
-                    .map(|r: usize| r == 1)
-            }
-            ConnectionPool::Cluster(pool) => {
-                let mut conn = pool.get().await?;
-                cmd("EXISTS")
-                    .arg(&[key])
-                    .query_async(&mut conn)
-                    .await
-                    .map_err(UtilError::from)
-                    .map(|r: usize| r == 1)
-            }
-        }
+        let result: usize = redis_op!(self, cmd("EXISTS").arg(&[key]))?;
+        Ok(result == 1)
     }
 }
