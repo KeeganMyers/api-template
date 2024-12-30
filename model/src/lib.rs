@@ -12,7 +12,7 @@ pub enum Role {
     Admin,
 }
 
-#[derive(Serialize, Deserialize, ToSchema, Clone, Debug, Default)]
+#[derive(Serialize, PartialEq, Deserialize, ToSchema, Clone, Debug, Default)]
 pub struct Paging {
     pub page: Option<JsonNum>,
     pub limit: Option<JsonNum>,
@@ -58,6 +58,7 @@ mod test {
     use super::*;
     use derive_model::Model;
     use derive_query::Query;
+    use to_params::{FromParams, ToParams};
     use util::{
         error::UtilError,
         macros::make_sort,
@@ -73,13 +74,24 @@ mod test {
         pub test2: String,
     }
 
-    #[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone)]
+    #[derive(Debug, PartialEq, Serialize, Deserialize, ToSchema, Default, Clone)]
     pub enum SortColumn {
         #[default]
         Test,
     }
 
-    #[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone, Query)]
+    #[derive(
+        Debug,
+        PartialEq,
+        Serialize,
+        Deserialize,
+        ToSchema,
+        Default,
+        Clone,
+        Query,
+        ToParams,
+        FromParams,
+    )]
     pub struct Query {
         test: Option<String>,
         test2: String,
@@ -117,5 +129,16 @@ mod test {
         };
 
         assert_eq!(TestModel::build_query(&query).sql(), "SELECT test,db_col_name AS test2 FROM test_tbl  WHERE test = $1 AND test2 = $2 ORDER BY $3 $4 FETCH NEXT $5 ROWS ONLY OFFSET $6".to_string());
+    }
+
+    #[test]
+    fn builds_redis_param_vec() {
+        let query = Query {
+            test: Some("some string".to_string()),
+            test2: "some string".to_string(),
+            ..Query::default()
+        };
+        let query_vec = query.to_params();
+        assert_eq!(Query::from_params(query_vec), query);
     }
 }

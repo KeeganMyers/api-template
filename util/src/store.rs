@@ -6,13 +6,13 @@ use crate::{
 use deadpool_redis::{
     cluster::{Config as ClusterConfig, Pool as RedisClusterPool, Runtime},
     redis::cmd,
-    Config as InstanceConfig, Pool as RedisInstancePool,
+    Config as InstanceConfig, Pool, Pool as RedisInstancePool,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool, Postgres, QueryBuilder};
 use utoipa::ToSchema;
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, ToSchema, Clone, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum SortDirection {
     #[default]
@@ -191,6 +191,7 @@ impl RWDB {
 
 #[allow(async_fn_in_trait)]
 pub trait CacheLayer: Sized {
+    async fn get_conn_pool(&self) -> &ConnectionPool;
     async fn new(env: &Env) -> Result<Self, UtilError>;
     async fn set_value(
         &self,
@@ -215,6 +216,10 @@ pub enum ConnectionPool {
 }
 
 impl CacheLayer for Redis {
+    async fn get_conn_pool(&self) -> &ConnectionPool {
+        &self.pool
+    }
+
     async fn new(env: &Env) -> Result<Self, UtilError> {
         let redis_env = env.redis.as_ref().expect("Env var for Redis not set, host (for single instance) or hosts(for cluster) must be set");
         if let Some(url) = &redis_env.host {

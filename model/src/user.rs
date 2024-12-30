@@ -47,7 +47,7 @@ pub struct UpdateUser {
     pub email: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, ToSchema, Default, Clone)]
 pub enum SortColumn {
     #[default]
     CreatedAt,

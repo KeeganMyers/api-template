@@ -24,7 +24,7 @@ pub trait AppConfig {
     fn get_ro_store_settings(&self) -> &PostgresConfig;
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone, ToSchema)]
 #[serde(untagged)]
 pub enum JsonNum {
     S(String),
@@ -42,4 +42,12 @@ pub trait AppState {
     fn get_ro_store(&self) -> &RODB;
     fn get_env(&self) -> &Env;
     fn cache(&self) -> Option<&impl CacheLayer>;
+}
+
+pub trait ToParams {
+    fn to_params(&self) -> Vec<String>;
+}
+
+pub trait FromParams: Default {
+    fn from_params(params: Vec<String>) -> Self;
 }

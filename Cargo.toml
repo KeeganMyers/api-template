@@ -3,8 +3,9 @@ resolver = "2"
 
 members = [
  "api",
- "cli", "derive_model","derive_query","derive_log_and_parse",
- "derive_axum_errors",
+ "cli", "macros/derive_model","macros/derive_query","macros/derive_log_and_parse",
+ "macros/derive_axum_errors",
+ "macros/to_params",
  "model",
  "util", "broker",
 ]

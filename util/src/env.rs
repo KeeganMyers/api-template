@@ -44,8 +44,10 @@ pub struct Redis {
     pub host: Option<String>,
     #[serde(rename = "redis_port")]
     pub port: Option<String>,
-    #[serde(rename = "test_redis_insecure")]
+    #[serde(rename = "redis_insecure")]
     pub insecure: Option<String>,
+    #[serde(rename = "redis_stream_len")]
+    pub stream_len: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]

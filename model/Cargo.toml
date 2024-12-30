@@ -8,9 +8,10 @@ sqlx.workspace = true
 uuid.workspace = true
 thiserror.workspace = true
 util = {path = "../util"}
-derive_model = {version = "*", path = "../derive_model"}
-derive_query = {version = "*", path = "../derive_query"}
-derive_log_and_parse = {version = "*", path = "../derive_log_and_parse"}
+derive_model = {version = "*", path = "../macros/derive_model"}
+to_params = {version = "*", path = "../macros/to_params"}
+derive_query = {version = "*", path = "../macros/derive_query"}
+derive_log_and_parse = {version = "*", path = "../macros/derive_log_and_parse"}
 chrono.workspace = true
 serde.workspace = true
 serde_json.workspace = true

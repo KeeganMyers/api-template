@@ -10,7 +10,7 @@ thiserror.workspace = true
 serde.workspace = true
 util = {version = "*", path = "../util"}
 model = {version = "*", path = "../model"}
-derive_axum_errors = {version = "*", path = "../derive_axum_errors"}
+derive_axum_errors = {version = "*", path = "../macros/derive_axum_errors"}
 env_logger.workspace = true
 log.workspace = true
 async-trait.workspace = true
