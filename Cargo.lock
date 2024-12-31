@@ -356,8 +356,12 @@ dependencies = [
 name = "broker"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "deadpool-redis",
+ "log",
  "redis",
+ "serde",
+ "serde_json",
  "to_params",
  "tokio",
  "util",
@@ -475,11 +479,16 @@ name = "cli"
 version = "0.1.0"
 dependencies = [
  "api",
+ "broker",
  "chrono",
  "clap",
  "dotenv",
  "env_logger",
  "envy",
+ "futures",
+ "serde",
+ "serde_json",
+ "to_params",
  "tokio",
  "util",
 ]

@@ -12,3 +12,8 @@ tokio.workspace = true
 chrono.workspace = true
 envy.workspace = true
 dotenv.workspace = true
+broker = { version = "0.1.0", path = "../broker" }
+to_params = { version = "0.1.0", path = "../macros/to_params" }
+serde.workspace = true
+serde_json.workspace = true
+futures = "0.3.31"

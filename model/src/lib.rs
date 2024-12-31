@@ -63,6 +63,7 @@ mod test {
         error::UtilError,
         macros::make_sort,
         store::{PaginatedResult, RODB},
+        FromParams, ToParams,
     };
 
     #[derive(sqlx::FromRow, Model)]
@@ -131,14 +132,16 @@ mod test {
         assert_eq!(TestModel::build_query(&query).sql(), "SELECT test,db_col_name AS test2 FROM test_tbl  WHERE test = $1 AND test2 = $2 ORDER BY $3 $4 FETCH NEXT $5 ROWS ONLY OFFSET $6".to_string());
     }
 
+    #[derive(Debug, Default, PartialEq, ToParams, FromParams)]
+    pub struct Query2 {
+        test: String,
+    }
     #[test]
     fn builds_redis_param_vec() {
-        let query = Query {
-            test: Some("some string".to_string()),
-            test2: "some string".to_string(),
-            ..Query::default()
+        let query = Query2 {
+            test: "some string".to_string(),
         };
         let query_vec = query.to_params();
-        assert_eq!(Query::from_params(query_vec), query);
+        assert_eq!(Query2::from_params(query_vec), query);
     }
 }

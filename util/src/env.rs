@@ -59,6 +59,7 @@ pub struct Env {
     pub auth: Option<Auth>,
     #[serde(flatten)]
     pub redis: Option<Redis>,
+    pub watch_topics: Option<String>,
 }
 
 impl Env {

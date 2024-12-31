@@ -22,6 +22,7 @@ fn get_test_env() -> Env {
         server_port: Some(3031),
         auth: None,
         redis: None,
+        watch_topics: None,
     }
 }
 

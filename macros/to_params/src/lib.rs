@@ -2,12 +2,9 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro2::Span;
 
 use quote::quote;
-use syn::{Data, DeriveInput, Fields, Ident, Type};
-
-use std::collections::BTreeMap;
+use syn::{Data, DeriveInput, Ident, Type};
 
 #[proc_macro_derive(FromParams)]
 pub fn from_params(input: TokenStream) -> TokenStream {
@@ -23,7 +20,7 @@ pub fn from_params(input: TokenStream) -> TokenStream {
         .filter_map(|field| field.ident.as_ref())
         .collect::<Vec<&Ident>>();
 
-    let value_indexes: Vec<usize> = (1..idents.len()).step_by(2).collect();
+    let value_indexes: Vec<usize> = (1..idents.len() + 1).step_by(2).collect();
     // parse out all the primitive types in the struct as Idents
     let typecalls: Vec<Type> = fields
         .iter()
@@ -33,8 +30,6 @@ pub fn from_params(input: TokenStream) -> TokenStream {
     let name: &Ident = &ast.ident;
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
     let tokens = quote! {
-        use util::{FromParams};
-
         impl #impl_generics FromParams for #name #ty_generics #where_clause {
 
             fn from_params(mut params: Vec<String>) -> #name {
@@ -79,8 +74,6 @@ pub fn to_params(input_struct: TokenStream) -> TokenStream {
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
     let tokens = quote! {
-        use util::{ToParams};
-
         impl #impl_generics ToParams for #name #ty_generics #where_clause {
             fn to_params(&self) -> Vec<String> {
                 let mut params: Vec<String> = vec![];

@@ -63,4 +63,6 @@ pub enum UtilError {
     DeadpoolCluserRedis(#[from] deadpool::managed::PoolError<RedisError>),
     #[error(transparent)]
     RedisError(#[from] RedisError),
+    #[error("Redis stream params could not be converted into Vec<String>")]
+    RedisStreamParams,
 }
