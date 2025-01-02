@@ -6,6 +6,8 @@ members = [
  "cli", "macros/derive_model","macros/derive_query","macros/derive_log_and_parse",
  "macros/derive_axum_errors",
  "macros/to_params",
+ "macros/derive_new_model",
+ "macros/derive_update_model",
  "model",
  "util", "broker",
 ]

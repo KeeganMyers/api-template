@@ -62,9 +62,10 @@ mod test {
     use util::{
         error::UtilError,
         macros::make_sort,
-        store::{PaginatedResult, RODB},
+        store::{NewModel, PaginatedResult, UpdateModel, RODB, RWDB},
         FromParams, ToParams,
     };
+    use uuid::Uuid;
 
     #[derive(sqlx::FromRow, Model)]
     #[allow(dead_code)]
@@ -111,14 +112,9 @@ mod test {
             vec!["test".to_string(), "db_col_name".to_string()]
         );
         assert_eq!(
-            TestModel::base_insert(),
-            "INSERT INTO test_tbl (test,db_col_name) VALUES ".to_string()
-        );
-        assert_eq!(
             TestModel::base_select(),
             "SELECT test,db_col_name AS test2 FROM test_tbl ".to_string()
         );
-        assert_eq!(TestModel::base_update(), "UPDATE test_tbl SET ".to_string());
     }
 
     #[test]

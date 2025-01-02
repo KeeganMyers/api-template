@@ -13,6 +13,7 @@ use deadpool_redis::{
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool, Postgres, QueryBuilder};
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, ToSchema, Clone, Default)]
 #[serde(rename_all = "lowercase")]
@@ -33,6 +34,15 @@ pub struct PaginatedResult<T> {
     pub data: Vec<T>,
 }
 
+pub trait NewModel {
+    fn add_column_names(&self, qb: &mut QueryBuilder<Postgres>);
+    fn add_column_values(&self, qb: &mut QueryBuilder<Postgres>);
+}
+
+pub trait UpdateModel {
+    fn add_columns(&self, qb: &mut QueryBuilder<Postgres>);
+}
+
 #[allow(async_fn_in_trait)]
 pub trait Model: Sized + Send {
     fn table_name() -> String;
@@ -51,17 +61,13 @@ pub trait Model: Sized + Send {
             Self::table_name()
         )
     }
-    fn base_update() -> String {
-        format!("UPDATE {} SET ", Self::table_name())
-    }
 
-    fn base_insert() -> String {
-        format!(
-            "INSERT INTO {} ({}) VALUES ",
-            Self::table_name(),
-            Self::fields_str()
-        )
-    }
+    async fn update(
+        id: Uuid,
+        updated_model: impl UpdateModel,
+        db: &RWDB,
+    ) -> Result<Self, UtilError>;
+    async fn insert(new_model: impl NewModel, db: &RWDB) -> Result<Self, UtilError>;
     fn build_query<Q>(query: &Q) -> QueryBuilder<'static, Postgres>
     where
         Q: ToSqlQuery + Pagination + ToSqlSort,
@@ -89,6 +95,10 @@ pub trait Model: Sized + Send {
         query_str: Option<String>,
         db: &RODB,
     ) -> Result<PaginatedResult<Self>, UtilError>
+    where
+        Q: ToSqlQuery + Pagination + ToSqlSort;
+
+    async fn execute<Q>(query: Q, query_str: &str, db: &RWDB) -> Result<(), UtilError>
     where
         Q: ToSqlQuery + Pagination + ToSqlSort;
 

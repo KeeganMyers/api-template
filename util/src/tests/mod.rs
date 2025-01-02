@@ -1,5 +1,5 @@
 use crate::{
-    env::{Env, PostgresConfig},
+    env::{Env, PostgresConfig, Redis as RedisConfig},
     error::UtilError,
     store::{Redis, RODB, RWDB},
     AppState, CacheLayer,
@@ -21,7 +21,12 @@ fn get_test_env() -> Env {
         postgres: get_db_config(),
         server_port: Some(3031),
         auth: None,
-        redis: None,
+        redis: Some(RedisConfig {
+            host: Some("localhost".to_string()),
+            port: Some("6380".to_string()),
+            insecure: Some("true".to_string()),
+            ..RedisConfig::default()
+        }),
         watch_topics: None,
     }
 }

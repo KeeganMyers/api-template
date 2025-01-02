@@ -709,7 +709,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive_new_model"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_json",
+ "syn 2.0.91",
+]
+
+[[package]]
 name = "derive_query"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_json",
+ "syn 2.0.91",
+]
+
+[[package]]
+name = "derive_update_model"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
@@ -1698,7 +1718,10 @@ dependencies = [
  "chrono",
  "derive_log_and_parse",
  "derive_model",
+ "derive_new_model",
  "derive_query",
+ "derive_update_model",
+ "log",
  "reqwest 0.12.9",
  "serde",
  "serde_json",

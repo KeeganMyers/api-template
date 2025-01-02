@@ -36,7 +36,7 @@ pub struct Auth {
     pub redirect_url: String,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 pub struct Redis {
     #[serde(rename = "redis_hosts")]
     pub hosts: Option<String>,

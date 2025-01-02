@@ -2,12 +2,14 @@ use super::{error::ModelError, Paging, Role};
 use casdoor_rust_sdk::CasdoorUser;
 use chrono::{DateTime, Utc};
 use derive_model::Model;
+use derive_new_model::NewModel;
 use derive_query::Query;
+use derive_update_model::UpdateModel;
 use serde::{Deserialize, Serialize};
 use util::{
     error::UtilError,
     macros::make_sort,
-    store::{PaginatedResult, RODB, RWDB},
+    store::{NewModel, PaginatedResult, UpdateModel, RODB, RWDB},
 };
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -27,7 +29,7 @@ pub struct User {
     pub email: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Default, Clone, NewModel)]
 pub struct NewUser {
     pub role: Role,
     pub external_id: Option<String>,
@@ -37,7 +39,7 @@ pub struct NewUser {
     pub email: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Default, Clone, UpdateModel)]
 pub struct UpdateUser {
     pub last_login: Option<DateTime<Utc>>,
     pub role: Option<Role>,
@@ -86,26 +88,6 @@ impl User {
         .map_err(|e| ModelError::from(UtilError::from(e)))
     }
 
-    pub async fn update(updated_user: UpdateUser, db: RWDB) -> Result<User, ModelError> {
-        sqlx::query_as!(
-            Self,
-            r#"
-            UPDATE users
-            SET 
-            last_login = COALESCE($1,last_login),
-            display_name = COALESCE($2,display_name), 
-            email = COALESCE($3,email)
-            RETURNING id,external_id,created_at,updated_at,last_login,role as "role!: Role",display_name,email
-            "#,
-            updated_user.last_login,
-            updated_user.display_name,
-            updated_user.email
-        )
-        .fetch_one(db.get_conn())
-        .await
-        .map_err(|e| ModelError::from(UtilError::from(e)))
-    }
-
     pub async fn get(id: Uuid, db: RODB) -> Result<User, ModelError> {
         sqlx::query_as!(
             Self,
@@ -146,16 +128,36 @@ impl User {
 
 #[cfg(test)]
 mod test {
+    use super::*;
+    use util::{tests::TestApiState, AppState};
 
     #[tokio::test]
-    async fn create() {}
+    async fn create_user() {
+        let state = TestApiState::from_test_env().await.unwrap();
+        let new_user = NewUser {
+            display_name: Some("Test User".to_string()),
+            ..NewUser::default()
+        };
+        User::insert(new_user, state.get_rw_store()).await.unwrap();
+    }
 
     #[tokio::test]
-    async fn update() {}
+    async fn update_user() {
+        let state = TestApiState::from_test_env().await.unwrap();
+        let new_user = NewUser {
+            display_name: Some("Test User".to_string()),
+            ..NewUser::default()
+        };
+        let user = User::insert(new_user, state.get_rw_store()).await.unwrap();
+        let updated_model = UpdateUser {
+            display_name: Some("changed name".to_string()),
+            email: Some("someone@somewhere.com".to_string()),
+            ..UpdateUser::default()
+        };
 
-    #[tokio::test]
-    async fn get() {}
-
-    #[tokio::test]
-    async fn get_paginated() {}
+        //async fn update(id: Uuid,updated_model: impl UpdateModel,db: &RWDB) -> Result<Self,UtilError>;
+        User::update(user.id, updated_model, state.get_rw_store())
+            .await
+            .unwrap();
+    }
 }

@@ -9,6 +9,8 @@ uuid.workspace = true
 thiserror.workspace = true
 util = {path = "../util"}
 derive_model = {version = "*", path = "../macros/derive_model"}
+derive_new_model = {version = "*", path = "../macros/derive_new_model"}
+derive_update_model = {version = "*", path = "../macros/derive_update_model"}
 to_params = {version = "*", path = "../macros/to_params"}
 derive_query = {version = "*", path = "../macros/derive_query"}
 derive_log_and_parse = {version = "*", path = "../macros/derive_log_and_parse"}
@@ -19,6 +21,7 @@ tokio = { workspace = true, features = ["full"] }
 utoipa.workspace = true
 reqwest.workspace = true
 casdoor-rust-sdk.workspace = true
+log.workspace = true
 
 [dev-dependencies]
 tokio-test = "0.4.4"

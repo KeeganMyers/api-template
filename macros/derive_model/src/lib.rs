@@ -79,6 +79,23 @@ fn derive_model_struct(ident: Ident, input: &DeriveInput, struct_data: &DataStru
                 #table_name.to_owned()
             }
 
+            async fn execute<Q>(
+                query: Q,
+                query_str: &str,
+                db: &RWDB,
+            ) -> Result<(), UtilError>
+            where
+                Q: ToSqlQuery + Pagination + ToSqlSort {
+                    let mut qb = QueryBuilder::new(query_str);
+                    query.add_where(&mut qb);
+                    let built_query = qb.build();
+                    let _ = built_query
+                        .execute(db.get_conn())
+                        .await
+                        .map_err(UtilError::from)?;
+                    Ok(())
+                }
+
             async fn query<Q>(query: Q,query_str: Option<String>,db: &RODB) -> Result<PaginatedResult<Self>,UtilError>
                 where Q: ToSqlQuery + Pagination + ToSqlSort
             {
@@ -98,6 +115,45 @@ fn derive_model_struct(ident: Ident, input: &DeriveInput, struct_data: &DataStru
                     .filter_map(|r| Self::from_row(r).ok())
                     .collect::<Vec<Self>>();
                 Self::paginated_result(records,total,query)
+            }
+
+            async fn update(id: Uuid,updated_model: impl UpdateModel,db: &RWDB) -> Result<Self,UtilError> {
+                let mut qb = QueryBuilder::new(
+                format!(
+                    "UPDATE {} SET ",
+                    Self::table_name(),
+                ));
+                updated_model.add_columns(&mut qb);
+                qb.push(" WHERE id = ");
+                qb.push_bind(id);
+                qb.push(format!(" RETURNING {}",Self::select_fields_str()));
+
+                log::trace!("UPDATE SQL generated {:?}", qb.sql());
+                let built_query = qb.build();
+                let data = built_query
+                    .fetch_one(db.get_conn())
+                    .await
+                    .map_err(UtilError::from)?;
+                Self::from_row(&data).map_err(UtilError::from)
+            }
+
+            async fn insert(new_model: impl NewModel,db: &RWDB) -> Result<Self,UtilError> {
+                let mut qb = QueryBuilder::new(
+                format!(
+                    "INSERT INTO {} ",
+                    Self::table_name(),
+                ));
+                new_model.add_column_names(&mut qb);
+                qb.push(" VALUES ");
+                new_model.add_column_values(&mut qb);
+                qb.push(format!(" RETURNING {}",Self::select_fields_str()));
+                log::trace!("Insert SQL generated {:?}", qb.sql());
+                let built_query = qb.build();
+                let data = built_query
+                    .fetch_one(db.get_conn())
+                    .await
+                    .map_err(UtilError::from)?;
+                Self::from_row(&data).map_err(UtilError::from)
             }
         }
     }
