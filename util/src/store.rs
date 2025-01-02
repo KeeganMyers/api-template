@@ -13,7 +13,6 @@ use deadpool_redis::{
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool, Postgres, QueryBuilder};
 use utoipa::ToSchema;
-use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, ToSchema, Clone, Default)]
 #[serde(rename_all = "lowercase")]
@@ -56,18 +55,21 @@ pub trait Model: Sized + Send {
     }
     fn base_select() -> String {
         format!(
-            "SELECT {},CAST(COUNT(*) AS BigInt) AS total FROM {} ",
+            "SELECT {},CAST(COUNT(*) OVER() AS BigInt) AS total FROM {} ",
             Self::select_fields_str(),
             Self::table_name()
         )
     }
 
-    async fn update(
-        id: Uuid,
+    async fn update<Q>(
+        query: &Q,
         updated_model: impl UpdateModel,
         db: &RWDB,
-    ) -> Result<Self, UtilError>;
+    ) -> Result<Self, UtilError>
+    where
+        Q: ToSqlQuery + Pagination + ToSqlSort;
     async fn insert(new_model: impl NewModel, db: &RWDB) -> Result<Self, UtilError>;
+    async fn upsert(new_model: impl NewModel + UpdateModel, db: &RWDB) -> Result<Self, UtilError>;
     fn build_query<Q>(query: &Q) -> QueryBuilder<'static, Postgres>
     where
         Q: ToSqlQuery + Pagination + ToSqlSort,
@@ -140,9 +142,9 @@ pub trait ToSqlSort {
     fn column(&self) -> String;
     fn add_sort(&self, qb: &mut QueryBuilder<Postgres>) {
         qb.push(" ORDER BY ");
-        qb.push_bind(self.column());
+        qb.push(self.column());
         qb.push(" ");
-        qb.push_bind(self.direction());
+        qb.push(self.direction());
     }
 }
 

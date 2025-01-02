@@ -46,6 +46,7 @@ pub struct UpdateUser {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, ToSchema, Default, Clone)]
+#[serde(rename_all = "snake_case")]
 pub enum SortColumn {
     #[default]
     CreatedAt,
@@ -57,6 +58,7 @@ make_sort!(UserSort, SortColumn);
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone, Query)]
 pub struct Query {
+    id: Option<Uuid>,
     display_name: Option<String>,
     email: Option<String>,
     #[serde(flatten)]
@@ -97,13 +99,18 @@ mod test {
             ..NewUser::default()
         };
         let user = User::insert(new_user, state.get_rw_store()).await.unwrap();
+        let query = Query {
+            id: Some(user.id),
+            ..Query::default()
+        };
+
         let updated_model = UpdateUser {
             display_name: Some("changed name".to_string()),
             email: Some("someone@somewhere.com".to_string()),
             ..UpdateUser::default()
         };
 
-        User::update(user.id, updated_model, state.get_rw_store())
+        User::update(&query, updated_model, state.get_rw_store())
             .await
             .unwrap();
     }

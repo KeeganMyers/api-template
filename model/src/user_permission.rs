@@ -11,7 +11,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, sqlx::Type, Default, PartialEq, Clone)]
-#[sqlx(type_name = "target", rename_all = "lowercase")]
+#[sqlx(type_name = "target", rename_all = "snake_case")]
 pub enum Target {
     #[default]
     User,
@@ -34,7 +34,6 @@ pub struct UserPermission {
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Default, Clone, NewModel, ToSchema)]
 pub struct NewUserPermission {
-    pub id: Uuid,
     pub user_id: Uuid,
     pub target: Target,
     pub create_record: bool,

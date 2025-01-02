@@ -2,6 +2,7 @@ pub mod error;
 pub mod user;
 pub mod user_permission;
 pub mod user_readmodel;
+
 use serde::{Deserialize, Serialize};
 use util::{store::Pagination, JsonNum};
 use utoipa::ToSchema;
@@ -59,7 +60,6 @@ mod test {
         store::{NewModel, PaginatedResult, UpdateModel, RODB, RWDB},
         FromParams, ToParams,
     };
-    use uuid::Uuid;
 
     #[derive(sqlx::FromRow, Model)]
     #[allow(dead_code)]
@@ -107,19 +107,19 @@ mod test {
         );
         assert_eq!(
             TestModel::base_select(),
-            "SELECT test,db_col_name AS test2 FROM test_tbl ".to_string()
+            "SELECT test,db_col_name AS test2,CAST(COUNT(*) OVER() AS BigInt) AS total FROM test_tbl ".to_string()
         );
     }
 
     #[test]
-    fn builds_valid_sql_with_querty() {
+    fn builds_valid_sql_with_query() {
         let query = Query {
             test: Some("some string".to_string()),
             test2: "some string".to_string(),
             ..Query::default()
         };
 
-        assert_eq!(TestModel::build_query(&query).sql(), "SELECT test,db_col_name AS test2 FROM test_tbl  WHERE test = $1 AND test2 = $2 ORDER BY $3 $4 FETCH NEXT $5 ROWS ONLY OFFSET $6".to_string());
+        assert_eq!(TestModel::build_query(&query).sql(), r#"SELECT test,db_col_name AS test2,CAST(COUNT(*) OVER() AS BigInt) AS total FROM test_tbl  WHERE test = $1 AND test2 = $2 ORDER BY "Test" asc FETCH NEXT $3 ROWS ONLY OFFSET $4"#.to_string());
     }
 
     #[derive(Debug, Default, PartialEq, ToParams, FromParams)]

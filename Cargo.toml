@@ -13,7 +13,7 @@ members = [
 ]
 
 [workspace.dependencies]
-sqlx = { version = "0.8.2", features = ["postgres", "runtime-tokio", "uuid", "chrono"] }
+sqlx = { version = "0.8.2", features = ["postgres", "runtime-tokio", "uuid", "chrono","json"] }
 serde = { version = "1.0.215", features = ["derive"] }
 tokio = { version = "1.41.1", features = ["full"] }
 tokio-test = "0.4.4"

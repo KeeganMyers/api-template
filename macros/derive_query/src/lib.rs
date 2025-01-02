@@ -85,23 +85,22 @@ fn derive_query_struct(ident: Ident, struct_data: &DataStruct) -> TokenStream {
     }
 
     if sort_present {
-        sort_ast.extend(
-            quote!(
-            use util::JsonNum;
+        sort_ast.extend(quote!(
+        use util::JsonNum;
 
-            impl ToSqlSort for #ident {
-                    fn direction(&self) -> String {
-                        self.sort.clone().unwrap_or_default().direction
-                            .and_then(|s| serde_json::to_string(&s).ok())
-                            .unwrap_or("asc".to_owned())
-                    }
+        impl ToSqlSort for #ident {
+                fn direction(&self) -> String {
+                    self.sort.clone().unwrap_or_default().direction
+                        .and_then(|s| serde_json::to_string(&s).ok())
+                        .unwrap_or("asc".to_owned())
+                }
 
-                    fn column(&self) -> String {
-                        serde_json::to_string(&self.sort.clone().unwrap_or_default().sort_by.clone().unwrap_or_default()).unwrap_or_default()
-                    }
-            }
-                )
-            );
+                fn column(&self) -> String {
+                    serde_json::to_string(&self.sort.clone().unwrap_or_default()
+                                          .sort_by.clone().unwrap_or_default()).unwrap_or_default()
+                }
+        }
+            ));
     }
 
     if paging_present {

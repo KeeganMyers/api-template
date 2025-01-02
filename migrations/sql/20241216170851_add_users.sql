@@ -29,3 +29,4 @@ left join (select json_agg(p.*) as permissions, p.user_id from (select id,target
 on u.id = p.user_id
 
 create table user_readmodels as select * from user_readmodels_v;
+ALTER TABLE user_readmodels ADD CONSTRAINT unique_user_id UNIQUE(id);
