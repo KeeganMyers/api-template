@@ -1,16 +1,10 @@
 pub mod error;
 pub mod user;
+pub mod user_permission;
+pub mod user_readmodel;
 use serde::{Deserialize, Serialize};
 use util::{store::Pagination, JsonNum};
 use utoipa::ToSchema;
-
-#[derive(Debug, Serialize, Deserialize, sqlx::Type, Default, PartialEq, Clone)]
-#[sqlx(type_name = "role", rename_all = "lowercase")]
-pub enum Role {
-    #[default]
-    User,
-    Admin,
-}
 
 #[derive(Serialize, PartialEq, Deserialize, ToSchema, Clone, Debug, Default)]
 pub struct Paging {
