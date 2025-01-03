@@ -65,4 +65,8 @@ pub enum UtilError {
     RedisError(#[from] RedisError),
     #[error("Redis stream params could not be converted into Vec<String>")]
     RedisStreamParams,
+    #[error("Cant Materialize view no rows match query")]
+    RowCantMaterialize,
+    #[error("{0}")]
+    Other(String),
 }

@@ -1,4 +1,4 @@
-use crate::{error::ApiError, ApiState};
+use crate::error::ApiError;
 use async_trait::async_trait;
 use axum_core::extract::{FromRef, FromRequestParts};
 #[allow(unused_imports)]
@@ -6,6 +6,7 @@ use base64::engine::Engine;
 #[allow(unused_imports)]
 use casdoor_rust_sdk::{AuthService, CasdoorConfig, CasdoorUser};
 use http::{header::AUTHORIZATION, request::Parts, StatusCode};
+use model::State as ModelState;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -24,14 +25,14 @@ pub struct AuthUser(pub CasdoorUser);
 #[async_trait]
 impl<S> FromRequestParts<S> for AuthUser
 where
-    Arc<ApiState>: FromRef<S>,
+    Arc<ModelState>: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = ApiError;
 
     #[instrument(skip_all)]
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<AuthUser, Self::Rejection> {
-        let app_state = Arc::<ApiState>::from_ref(state);
+        let app_state = Arc::<ModelState>::from_ref(state);
         let token = AuthUserHeaderCustom::decode_request_parts(parts)?;
         if let Some(_auth) = app_state.get_env().auth.clone() {
             if token.0 == "valid" {
@@ -50,14 +51,14 @@ where
 #[async_trait]
 impl<S> FromRequestParts<S> for AuthUser
 where
-    Arc<ApiState>: FromRef<S>,
+    Arc<ModelState>: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = ApiError;
 
     #[instrument(skip_all)]
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<AuthUser, Self::Rejection> {
-        let app_state = Arc::<ApiState>::from_ref(state);
+        let app_state = Arc::<ModelState>::from_ref(state);
         let token = AuthUserHeaderCustom::decode_request_parts(parts)?;
         if let Some(auth) = app_state.get_env().auth.clone() {
             let config = CasdoorConfig::new(

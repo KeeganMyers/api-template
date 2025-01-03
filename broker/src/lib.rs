@@ -1,49 +1,17 @@
 use deadpool_redis::redis::{cmd, Value};
-use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::sync::Arc;
-use to_params::{FromParams, ToParams};
 use tokio::task;
 use tokio::task::JoinHandle;
-use util::store::{CacheLayer, ConnectionPool, Redis};
-use util::{env::Env, error::UtilError, macros::redis_op, AppState};
+use util::{
+    env::Env,
+    error::UtilError,
+    macros::redis_op,
+    store::{CacheLayer, ConnectionPool, Redis},
+    AppState,
+};
 use util::{FromParams, ToParams};
 use uuid::Uuid;
-
-async fn redirect() -> Result<(), UtilError> {
-    Ok(())
-}
-
-#[derive(Default)]
-pub struct TestSubscriber {}
-impl Subscriber for TestSubscriber {
-    type MessageType = TestMessage;
-
-    fn handle_message(
-        &self,
-        message: Self::MessageType,
-        _app_state: Arc<impl AppState>,
-    ) -> impl std::future::Future<Output = Result<(), UtilError>> + Send {
-        println!("got message {:?}", message);
-        redirect()
-    }
-    fn topic(&self) -> String {
-        "TestStream".to_string()
-    }
-    fn group_name(&self) -> String {
-        "TestGroup".to_string()
-    }
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize, ToParams, FromParams)]
-pub struct TestMessage {
-    pub attr1: String,
-}
-
-pub fn subscribers() -> Vec<impl Subscriber> {
-    let subs = vec![TestSubscriber::default()];
-    subs
-}
 
 #[allow(async_fn_in_trait)]
 pub trait Subscriber: Send + Sync {
@@ -100,6 +68,7 @@ pub trait BrokerLayer: Sized {
     ) -> Result<JoinHandle<Result<(), UtilError>>, UtilError>;
     async fn start_subscriptions(
         &self,
+        all_subscribers: Vec<impl Subscriber + 'static>,
         env: &Env,
         app_state: Arc<impl AppState + Clone + std::marker::Sync + std::marker::Send + 'static>,
     ) -> Result<Vec<JoinHandle<Result<(), UtilError>>>, UtilError>;
@@ -206,7 +175,14 @@ impl BrokerLayer for RedisStream {
                     message = message_result.unwrap();
                 }
 
-                let parsed_message = subscriber.parse_message(&message)?;
+                let parsed_message_result = subscriber.parse_message(&message);
+                if let Err(ref e) = parsed_message_result {
+                    log::error!("Failed to parse message {:?}", e);
+                    continue;
+                }
+
+                let parsed_message = parsed_message_result.unwrap();
+
                 if let Err(e) = subscriber
                     .handle_message(parsed_message, state.clone())
                     .await
@@ -253,10 +229,10 @@ impl BrokerLayer for RedisStream {
 
     async fn start_subscriptions(
         &self,
+        all_subscribers: Vec<impl Subscriber + 'static>,
         env: &Env,
         app_state: Arc<impl AppState + Clone + std::marker::Sync + std::marker::Send + 'static>,
     ) -> Result<Vec<JoinHandle<Result<(), UtilError>>>, UtilError> {
-        let all_subscribers = subscribers();
         let watch_topics = env.watch_topics.clone().unwrap_or_default();
         let topic_names = watch_topics.split(",").collect::<HashSet<_>>();
         let mut subscribers = vec![];

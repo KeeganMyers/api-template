@@ -11,16 +11,12 @@ use axum::{
     Router,
 };
 use log::info;
+use model::State as ModelState;
 use std::{
     net::{SocketAddr, TcpListener},
     sync::Arc,
 };
 use tracing::instrument;
-use util::{
-    env::Env,
-    store::{CacheLayer, Redis, RODB, RWDB},
-    AppState,
-};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -29,7 +25,7 @@ async fn healthcheck() -> (StatusCode, &'static str) {
     (StatusCode::OK, "OK")
 }
 
-pub(crate) fn routes(app_state: Arc<ApiState>) -> Router {
+pub(crate) fn routes(app_state: Arc<ModelState>) -> Router {
     Router::new()
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .route("/healthcheck", get(healthcheck))
@@ -47,14 +43,6 @@ pub(crate) fn routes(app_state: Arc<ApiState>) -> Router {
         .with_state(app_state)
 }
 
-#[derive(Clone)]
-pub struct ApiState {
-    pub rw_db: RWDB,
-    pub ro_db: RODB,
-    pub env: Env,
-    pub cache: Redis,
-}
-
 #[derive(OpenApi)]
 #[openapi(
     paths(
@@ -70,35 +58,7 @@ pub struct ApiState {
 )]
 pub struct ApiDoc;
 
-impl AppState for ApiState {
-    type StateType = ApiState;
-    type ErrorType = ApiError;
-
-    async fn from_env(env: Env) -> Result<Self::StateType, Self::ErrorType> {
-        Ok(Self {
-            rw_db: RWDB::connect(&env).await?,
-            ro_db: RODB::connect(&env).await?,
-            cache: Redis::new(&env).await?,
-            env,
-        })
-    }
-
-    fn get_rw_store(&self) -> &RWDB {
-        &self.rw_db
-    }
-    fn get_ro_store(&self) -> &RODB {
-        &self.ro_db
-    }
-    fn get_env(&self) -> &Env {
-        &self.env
-    }
-
-    fn cache(&self) -> Option<&impl CacheLayer> {
-        Some(&self.cache)
-    }
-}
-
-pub async fn start_server(app_state: ApiState) -> Result<(), ApiError> {
+pub async fn start_server(app_state: ModelState) -> Result<(), ApiError> {
     let release = env!("CARGO_PKG_VERSION");
     let app = routes(Arc::new(app_state.clone())).into_make_service();
     let port = app_state.env.server_port.unwrap_or(8080);

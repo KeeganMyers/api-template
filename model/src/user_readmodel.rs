@@ -1,13 +1,17 @@
-use crate::{error::ModelError, user_permission::Target, Paging};
+use crate::{user_permission::Target, Paging};
+use broker::Subscriber;
 use derive_model::Model;
 use derive_new_model::NewModel;
 use derive_query::Query;
 use derive_update_model::UpdateModel;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use to_params::{FromParams, ToParams};
 use util::{
     error::UtilError,
     make_sort,
     store::{NewModel, PaginatedResult, UpdateModel, RODB, RWDB},
+    AppState, FromParams, ToParams,
 };
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -45,7 +49,7 @@ pub enum SortColumn {
 
 make_sort!(UserReadModelSort, SortColumn);
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone, Query)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone, Query, FromParams, ToParams)]
 pub struct Query {
     id: Option<Uuid>,
     display_name: Option<String>,
@@ -56,23 +60,50 @@ pub struct Query {
     paging: Option<Paging>,
 }
 
+impl Subscriber for UserReadModel {
+    type MessageType = Query;
+
+    fn handle_message(
+        &self,
+        message: Self::MessageType,
+        state: Arc<impl AppState>,
+    ) -> impl std::future::Future<Output = Result<(), UtilError>> + Send {
+        log::trace!(
+            "message received on {} attempting to materialize read model",
+            self.topic()
+        );
+        UserReadModel::materialize(
+            message,
+            state.get_ro_store().clone(),
+            state.get_rw_store().clone(),
+        )
+    }
+
+    fn topic(&self) -> String {
+        "MaterializeUserReadModel".to_string()
+    }
+    fn group_name(&self) -> String {
+        "MaterializeUserReadModel".to_string()
+    }
+}
+
 impl UserReadModel {
-    async fn materialize(query: Query, ro_db: &RODB, rw_db: &RWDB) -> Result<Self, ModelError> {
+    async fn materialize(query: Query, ro_db: RODB, rw_db: RWDB) -> Result<(), UtilError> {
         let query_result = Self::query(
             query,
             Some(
                 "select id,external_id,display_name,email,permissions from user_readmodels_v"
                     .to_owned(),
             ),
-            ro_db,
+            &ro_db,
         )
         .await?;
         if let Some(read_model) = query_result.data.first() {
-            return Self::upsert(read_model.clone(), rw_db)
-                .await
-                .map_err(ModelError::from);
+            let _ = Self::upsert(read_model.clone(), &rw_db).await;
+
+            return Ok(());
         }
-        Err(ModelError::RowCantMaterialize)
+        Err(UtilError::RowCantMaterialize)
     }
 }
 
@@ -97,7 +128,7 @@ mod test {
             id: Some(user.id),
             ..Query::default()
         };
-        UserReadModel::materialize(query.clone(), state.get_ro_store(), state.get_rw_store())
+        UserReadModel::materialize(query.clone(), state.get_ro_store().clone(), state.get_rw_store().clone())
             .await
             .unwrap();
 
@@ -111,7 +142,7 @@ mod test {
             .await
             .unwrap();
 
-        UserReadModel::materialize(query, state.get_ro_store(), state.get_rw_store())
+        UserReadModel::materialize(query, state.get_ro_store().clone(), state.get_rw_store().clone())
             .await
             .unwrap();
     }

@@ -3,9 +3,58 @@ pub mod user;
 pub mod user_permission;
 pub mod user_readmodel;
 
+use crate::{error::ModelError, user_readmodel::UserReadModel};
+use broker::{BrokerLayer, RedisStream, Subscriber};
 use serde::{Deserialize, Serialize};
-use util::{store::Pagination, JsonNum};
+use util::{
+    env::Env,
+    store::{CacheLayer, Pagination, Redis, RODB, RWDB},
+    AppState, JsonNum,
+};
 use utoipa::ToSchema;
+
+#[derive(Clone)]
+pub struct State {
+    pub rw_db: RWDB,
+    pub ro_db: RODB,
+    pub env: Env,
+    pub cache: Redis,
+    pub broker: Option<RedisStream>,
+}
+
+impl AppState for State {
+    type StateType = State;
+    type ErrorType = ModelError;
+
+    async fn from_env(env: Env) -> Result<Self::StateType, Self::ErrorType> {
+        Ok(Self {
+            rw_db: RWDB::connect(&env).await?,
+            ro_db: RODB::connect(&env).await?,
+            cache: Redis::new(&env).await?,
+            broker: Some(RedisStream::new(&env).await?),
+            env,
+        })
+    }
+
+    fn get_rw_store(&self) -> &RWDB {
+        &self.rw_db
+    }
+    fn get_ro_store(&self) -> &RODB {
+        &self.ro_db
+    }
+    fn get_env(&self) -> &Env {
+        &self.env
+    }
+
+    fn cache(&self) -> Option<&impl CacheLayer> {
+        Some(&self.cache)
+    }
+}
+
+pub fn subscribers() -> Vec<impl Subscriber> {
+    let subs = vec![UserReadModel::default()];
+    subs
+}
 
 #[derive(Serialize, PartialEq, Deserialize, ToSchema, Clone, Debug, Default)]
 pub struct Paging {

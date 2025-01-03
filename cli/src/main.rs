@@ -1,9 +1,10 @@
-use api::{start_server, ApiState};
-use broker::{BrokerLayer, RedisStream, TestMessage};
+use api::start_server;
+use broker::{BrokerLayer, RedisStream};
 use chrono::Utc;
 use clap::Parser;
 use dotenv::dotenv;
 use futures::future::join_all;
+use model::{subscribers, State as ModelState};
 use std::error::Error;
 use std::fs::File;
 use std::sync::Arc;
@@ -30,7 +31,6 @@ pub enum Command {
     Version,
     /// Create a new sql migration file
     AddSqlMigration(AddSqlMigration),
-    PublishMessage,
     Broker,
 }
 
@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Command::Api => {
             env_logger::init();
             let env = Env::from_env()?;
-            let app_state = ApiState::from_env(env).await?;
+            let app_state = ModelState::from_env(env).await?;
             let server_handle = start_server(app_state);
             let _ = server_handle.await;
         }
@@ -61,21 +61,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
             println!("created migration {filename}");
         }
         Command::Version => println!("{}", CRATE_VERSION),
-        Command::PublishMessage => {
-            let env = Env::from_env()?;
-            env_logger::init();
-            let broker = RedisStream::new(&env).await?;
-            let message = TestMessage {
-                attr1: "it works".to_string(),
-            };
-            broker.publish("TestStream", &message).await?;
-        }
         Command::Broker => {
             let env = Env::from_env()?;
             env_logger::init();
             let broker = RedisStream::new(&env).await?;
-            let app_state = Arc::new(ApiState::from_env(env.clone()).await?);
-            let subscriptions = broker.start_subscriptions(&env, app_state).await?;
+            let app_state = Arc::new(ModelState::from_env(env.clone()).await?);
+            let subs = subscribers();
+            let subscriptions = broker.start_subscriptions(subs, &env, app_state).await?;
             if !subscriptions.is_empty() {
                 join_all(subscriptions).await;
             }

@@ -1,4 +1,4 @@
-use crate::{error::ApiError, extractors::auth_user::AuthUser, ApiState};
+use crate::{error::ApiError, extractors::auth_user::AuthUser};
 use axum::{
     debug_handler,
     extract::{Path, Query, State},
@@ -7,6 +7,7 @@ use axum::{
 use base64::engine::Engine;
 use casdoor_rust_sdk::{AuthService, CasdoorConfig};
 use casdoor_rust_sdk::{CasdoorUser, UserService};
+use model::State as ModelState;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::task;
@@ -20,7 +21,9 @@ use util::{AppState, B64_ENGINE};
         )
 )]
 #[debug_handler]
-pub async fn auth_login(State(api_state): State<Arc<ApiState>>) -> Result<Json<String>, ApiError> {
+pub async fn auth_login(
+    State(api_state): State<Arc<ModelState>>,
+) -> Result<Json<String>, ApiError> {
     if let Some(auth) = api_state.get_env().auth.clone() {
         let config = CasdoorConfig::new(
             auth.endpoint,
@@ -45,7 +48,9 @@ pub async fn auth_login(State(api_state): State<Arc<ApiState>>) -> Result<Json<S
         )
 )]
 #[debug_handler]
-pub async fn auth_signup(State(api_state): State<Arc<ApiState>>) -> Result<Json<String>, ApiError> {
+pub async fn auth_signup(
+    State(api_state): State<Arc<ModelState>>,
+) -> Result<Json<String>, ApiError> {
     if let Some(auth) = api_state.get_env().auth.clone() {
         let config = CasdoorConfig::new(
             auth.endpoint,
@@ -79,7 +84,7 @@ pub type Jwt = String;
 )]
 #[debug_handler]
 pub async fn auth_callback(
-    State(api_state): State<Arc<ApiState>>,
+    State(api_state): State<Arc<ModelState>>,
     Query(query): Query<CallbackQuery>,
 ) -> Result<Json<Jwt>, ApiError> {
     if let Some(auth) = api_state.get_env().auth.clone() {
@@ -126,7 +131,7 @@ pub async fn auth_callback(
 )]
 #[debug_handler]
 pub async fn get_auth_user(
-    State(api_state): State<Arc<ApiState>>,
+    State(api_state): State<Arc<ModelState>>,
     Path(name): Path<String>,
     _auth_user: AuthUser,
 ) -> Result<Json<CasdoorUser>, ApiError> {
@@ -150,7 +155,7 @@ pub async fn get_auth_user(
 #[utoipa::path(get, path = "/auth_users")]
 #[debug_handler]
 pub async fn get_auth_users(
-    State(api_state): State<Arc<ApiState>>,
+    State(api_state): State<Arc<ModelState>>,
     _auth_user: AuthUser,
 ) -> Result<Json<Vec<CasdoorUser>>, ApiError> {
     if let Some(auth) = api_state.get_env().auth.clone() {
@@ -172,7 +177,7 @@ pub async fn get_auth_users(
 #[utoipa::path(delete, path = "/auth_user")]
 #[debug_handler]
 pub async fn delete_auth_user(
-    State(api_state): State<Arc<ApiState>>,
+    State(api_state): State<Arc<ModelState>>,
     _auth_user: AuthUser,
     user: Json<CasdoorUser>,
 ) -> Result<Json<u16>, ApiError> {
@@ -194,7 +199,7 @@ pub async fn delete_auth_user(
 
 #[utoipa::path(post, path = "/auth_user")]
 pub async fn add_auth_user(
-    State(api_state): State<Arc<ApiState>>,
+    State(api_state): State<Arc<ModelState>>,
     _auth_user: AuthUser,
     user: Json<CasdoorUser>,
 ) -> Result<Json<u16>, ApiError> {

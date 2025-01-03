@@ -7,6 +7,7 @@ edition = "2021"
 clap = { version = "4.5.21", features = ["derive", "env"] }
 util = { version = "*", path = "../util"}
 api  = { version = "*", path = "../api"}
+model  = { version = "*", path = "../model"}
 env_logger = "0.11.5"
 tokio.workspace = true
 chrono.workspace = true
