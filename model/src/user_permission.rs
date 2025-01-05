@@ -1,10 +1,13 @@
+use crate::Paging;
 use chrono::{DateTime, Utc};
 use derive_model::Model;
 use derive_new_model::NewModel;
+use derive_query::Query;
 use derive_update_model::UpdateModel;
 use serde::{Deserialize, Serialize};
 use util::{
     error::UtilError,
+    macros::make_sort,
     store::{NewModel, PaginatedResult, UpdateModel, RODB, RWDB},
 };
 use utoipa::ToSchema;
@@ -50,4 +53,30 @@ pub struct UpdateUserPermission {
     pub update_record: Option<bool>,
     pub view_record: Option<bool>,
     pub delete_record: Option<bool>,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, ToSchema, Default, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum SortColumn {
+    #[default]
+    Id,
+    UserId,
+    Target,
+}
+
+make_sort!(UserPermissionSort, SortColumn);
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone, Query)]
+pub struct Query {
+    pub id: Option<Uuid>,
+    pub user_id: Option<Uuid>,
+    pub target: Option<Target>,
+    pub create_record: Option<bool>,
+    pub update_record: Option<bool>,
+    pub view_record: Option<bool>,
+    pub delete_record: Option<bool>,
+    #[serde(flatten)]
+    pub sort: Option<UserPermissionSort>,
+    #[serde(flatten)]
+    pub paging: Option<Paging>,
 }

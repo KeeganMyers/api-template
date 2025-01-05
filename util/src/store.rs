@@ -100,6 +100,18 @@ pub trait Model: Sized + Send {
     where
         Q: ToSqlQuery + Pagination + ToSqlSort;
 
+    async fn get<Q>(query: Q, query_str: Option<String>, db: &RODB) -> Result<Self, UtilError>
+    where
+        Q: ToSqlQuery + Pagination + ToSqlSort;
+
+    async fn get_opt<Q>(
+        query: Q,
+        query_str: Option<String>,
+        db: &RODB,
+    ) -> Result<Option<Self>, UtilError>
+    where
+        Q: ToSqlQuery + Pagination + ToSqlSort;
+
     async fn execute<Q>(query: Q, query_str: &str, db: &RWDB) -> Result<(), UtilError>
     where
         Q: ToSqlQuery + Pagination + ToSqlSort;

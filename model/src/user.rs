@@ -58,13 +58,13 @@ make_sort!(UserSort, SortColumn);
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone, Query)]
 pub struct Query {
-    id: Option<Uuid>,
-    display_name: Option<String>,
-    email: Option<String>,
+    pub id: Option<Uuid>,
+    pub display_name: Option<String>,
+    pub email: Option<String>,
     #[serde(flatten)]
-    sort: Option<UserSort>,
+    pub sort: Option<UserSort>,
     #[serde(flatten)]
-    paging: Option<Paging>,
+    pub paging: Option<Paging>,
 }
 
 impl User {

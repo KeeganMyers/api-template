@@ -125,6 +125,47 @@ fn derive_model_struct(ident: Ident, input: &DeriveInput, struct_data: &DataStru
                 Self::paginated_result(records,total,query)
             }
 
+            async fn get<Q>(query: Q,query_str: Option<String>,db: &RODB) -> Result<Self,UtilError>
+                where Q: ToSqlQuery + Pagination + ToSqlSort
+            {
+                let mut qb =  if let Some(qs) = query_str {
+                    QueryBuilder::new(qs)
+                } else {
+                    QueryBuilder::new(Self::base_select())
+                };
+                query.add_where(&mut qb);
+
+                log::trace!("GET SQL generated {:?}", qb.sql());
+                let built_query = qb.build();
+                let data = built_query
+                    .fetch_one(db.get_conn())
+                    .await
+                    .map_err(UtilError::from)?;
+
+                Ok(Self::from_row(&data)?)
+            }
+
+            async fn get_opt<Q>(query: Q,query_str: Option<String>,db: &RODB) -> Result<Option<Self>,UtilError>
+                where Q: ToSqlQuery + Pagination + ToSqlSort
+            {
+                let mut qb =  if let Some(qs) = query_str {
+                    QueryBuilder::new(qs)
+                } else {
+                    QueryBuilder::new(Self::base_select())
+                };
+                query.add_where(&mut qb);
+
+                log::trace!("GET SQL generated {:?}", qb.sql());
+                let built_query = qb.build();
+                built_query
+                    .fetch_optional(db.get_conn())
+                    .await
+                    .map_err(UtilError::from)?
+                    .map(|r| Self::from_row(&r))
+                    .transpose()
+                    .map_err(UtilError::from)
+            }
+
             async fn update<Q>(query: &Q,updated_model: impl UpdateModel,db: &RWDB) -> Result<Self,UtilError>
             where
                 Q: ToSqlQuery + Pagination + ToSqlSort,

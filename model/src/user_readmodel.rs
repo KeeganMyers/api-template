@@ -28,7 +28,16 @@ pub struct EmbeddedPermission {
 }
 
 #[derive(
-    Debug, Serialize, Deserialize, sqlx::FromRow, Default, Clone, Model, NewModel, UpdateModel,
+    Debug,
+    Serialize,
+    Deserialize,
+    sqlx::FromRow,
+    Default,
+    Clone,
+    Model,
+    NewModel,
+    UpdateModel,
+    ToSchema,
 )]
 #[model(table_name = "user_readmodels")]
 pub struct UserReadModel {
@@ -89,7 +98,7 @@ impl Subscriber for UserReadModel {
 
 impl UserReadModel {
     async fn materialize(query: Query, ro_db: RODB, rw_db: RWDB) -> Result<(), UtilError> {
-        let query_result = Self::query(
+        let read_model = Self::get(
             query,
             Some(
                 "select id,external_id,display_name,email,permissions from user_readmodels_v"
@@ -98,12 +107,8 @@ impl UserReadModel {
             &ro_db,
         )
         .await?;
-        if let Some(read_model) = query_result.data.first() {
-            let _ = Self::upsert(read_model.clone(), &rw_db).await;
-
-            return Ok(());
-        }
-        Err(UtilError::RowCantMaterialize)
+        let _ = Self::upsert(read_model.clone(), &rw_db).await?;
+        Ok(())
     }
 }
 
@@ -128,9 +133,13 @@ mod test {
             id: Some(user.id),
             ..Query::default()
         };
-        UserReadModel::materialize(query.clone(), state.get_ro_store().clone(), state.get_rw_store().clone())
-            .await
-            .unwrap();
+        UserReadModel::materialize(
+            query.clone(),
+            state.get_ro_store().clone(),
+            state.get_rw_store().clone(),
+        )
+        .await
+        .unwrap();
 
         let new_perm = NewUserPermission {
             user_id: user.id,
@@ -142,8 +151,12 @@ mod test {
             .await
             .unwrap();
 
-        UserReadModel::materialize(query, state.get_ro_store().clone(), state.get_rw_store().clone())
-            .await
-            .unwrap();
+        UserReadModel::materialize(
+            query,
+            state.get_ro_store().clone(),
+            state.get_rw_store().clone(),
+        )
+        .await
+        .unwrap();
     }
 }
