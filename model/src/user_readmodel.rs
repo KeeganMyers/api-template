@@ -60,13 +60,13 @@ make_sort!(UserReadModelSort, SortColumn);
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone, Query, FromParams, ToParams)]
 pub struct Query {
-    id: Option<Uuid>,
-    display_name: Option<String>,
-    email: Option<String>,
+    pub id: Option<Uuid>,
+    pub display_name: Option<String>,
+    pub email: Option<String>,
     #[serde(flatten)]
-    sort: Option<UserReadModelSort>,
+    pub sort: Option<UserReadModelSort>,
     #[serde(flatten)]
-    paging: Option<Paging>,
+    pub paging: Option<Paging>,
 }
 
 impl Subscriber for UserReadModel {

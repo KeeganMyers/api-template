@@ -1,7 +1,13 @@
-use crate::error::ApiError;
+use crate::{
+    controllers::JsonOrHtml,
+    error::ApiError,
+    extractors::content_type::{ContentType, ContentTypes},
+    respond_with,
+};
 use axum::{
     debug_handler,
-    extract::{Json, Query, State},
+    extract::{Json, Path, Query, State},
+    response::IntoResponse,
 };
 use model::{
     user_permission::{Query as UserPermissionQuery, UserPermission},
@@ -14,6 +20,7 @@ use util::{
     store::{Model, PaginatedResult},
     AppState,
 };
+use uuid::Uuid;
 
 #[utoipa::path(
     get,
@@ -25,14 +32,48 @@ use util::{
 #[instrument(skip(api_state))]
 #[debug_handler]
 pub async fn get_users(
+    ContentType(content_type): ContentType,
     Query(query): Query<ReadModelQuery>,
     State(api_state): State<Arc<ModelState>>,
-) -> Result<Json<PaginatedResult<UserReadModel>>, ApiError> {
-    Ok(Json(
-        UserReadModel::query(query, None, api_state.get_ro_store())
-            .await
-            .map_err(ApiError::from)?,
-    ))
+) -> Result<impl IntoResponse, ApiError> {
+    let users = UserReadModel::query(query, None, api_state.get_ro_store())
+        .await
+        .map_err(ApiError::from)?;
+
+    respond_with!(
+        content_type,
+        frontend::users::get_users(users, &api_state).await?,
+        users
+    )
+}
+
+#[utoipa::path(
+    get,
+    path = "/users/:id",
+    responses(
+            (status = 200, description = "Get user by id", body = UserReadModel)
+        )
+)]
+#[instrument(skip(api_state))]
+#[debug_handler]
+pub async fn get_user(
+    ContentType(content_type): ContentType,
+    Path(id): Path<Uuid>,
+    State(api_state): State<Arc<ModelState>>,
+) -> Result<impl IntoResponse, ApiError> {
+    let query = ReadModelQuery {
+        id: Some(id),
+        ..ReadModelQuery::default()
+    };
+    let user = UserReadModel::get(query, None, api_state.get_ro_store())
+        .await
+        .map_err(ApiError::from)?;
+
+    respond_with!(
+        content_type,
+        frontend::users::get_user(user, &api_state).await?,
+        user
+    )
 }
 
 #[utoipa::path(

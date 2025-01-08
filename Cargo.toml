@@ -9,7 +9,7 @@ members = [
  "macros/derive_new_model",
  "macros/derive_update_model",
  "model",
- "util", "broker",
+ "util", "broker", "frontend",
 ]
 
 [workspace.dependencies]
@@ -34,3 +34,4 @@ casdoor-rust-sdk = "1.3.0"
 deadpool-redis = { version = "0.18.0", features = ["serde", "cluster", "tokio"] }
 redis = { version = "0.27.6", features = ["cluster", "tokio-native-tls-comp", "native-tls"] }
 base64 = "0.22.1"
+minijinja = { version = "2.5.0", features = ["serde_json", "speedups", "json", "loader"] }

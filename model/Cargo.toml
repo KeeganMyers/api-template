@@ -23,6 +23,7 @@ reqwest.workspace = true
 casdoor-rust-sdk.workspace = true
 log.workspace = true
 broker = { version = "0.1.0", path = "../broker" }
+minijinja.workspace = true
 
 [dev-dependencies]
 tokio-test = "0.4.4"

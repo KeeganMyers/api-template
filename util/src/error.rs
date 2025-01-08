@@ -1,4 +1,5 @@
 use deadpool_redis::ConfigError;
+use derive_axum_errors::ErrorResponse;
 use redis::RedisError;
 use sqlx::error::{Error as SqlxError, ErrorKind as SqlxErrorKind};
 use thiserror::Error as ThisError;
@@ -31,7 +32,7 @@ impl From<SqlxError> for UtilError {
     }
 }
 
-#[derive(Debug, ThisError)]
+#[derive(ThisError, ErrorResponse)]
 pub enum UtilError {
     #[error("SQL transaction failed {0}")]
     SqlError(String),
@@ -67,6 +68,10 @@ pub enum UtilError {
     RedisStreamParams,
     #[error("Cant Materialize view no rows match query")]
     RowCantMaterialize,
+    #[error(transparent)]
+    Template(#[from] minijinja::Error),
+    #[error("Templates cannot be rendered as they have not been loaded into the env")]
+    TemplatesNotLoaded,
     #[error("{0}")]
     Other(String),
 }

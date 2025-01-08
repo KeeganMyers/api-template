@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block title %} Users {% endblock %}
+{% block body %}
+    <h1>Users</h1>
+
+    <p>List of current users</p>
+
+    {% for user in users %}
+      {% block list_user %} 
+      <turbo-frame id="users{{user.id}}">
+        <li> <a data-turbo-frame="_self" href="/users/{{user.id}}">{{ user.display_name }}</a></li>
+      </turbo-frame>
+      {% endblock list_user %}
+    {% endfor %}
+{% endblock %}

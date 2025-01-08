@@ -2,6 +2,7 @@ pub mod error;
 pub mod user;
 pub mod user_permission;
 pub mod user_readmodel;
+use minijinja::Environment as TemplateEnv;
 
 use crate::{error::ModelError, user_readmodel::UserReadModel};
 use broker::{BrokerLayer, RedisStream, Subscriber};
@@ -20,6 +21,7 @@ pub struct State {
     pub env: Env,
     pub cache: Redis,
     pub broker: Option<RedisStream>,
+    pub template_env: Option<TemplateEnv<'static>>,
 }
 
 impl AppState for State {
@@ -27,12 +29,16 @@ impl AppState for State {
     type ErrorType = ModelError;
 
     async fn from_env(env: Env) -> Result<Self::StateType, Self::ErrorType> {
+        let mut template_env = TemplateEnv::new();
+        template_env.set_loader(minijinja::path_loader("frontend/src/templates"));
+
         Ok(Self {
             rw_db: RWDB::connect(&env).await?,
             ro_db: RODB::connect(&env).await?,
             cache: Redis::new(&env).await?,
             broker: Some(RedisStream::new(&env).await?),
             env,
+            template_env: Some(template_env),
         })
     }
 

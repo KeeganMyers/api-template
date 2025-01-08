@@ -18,3 +18,8 @@ deadpool-redis.workspace = true
 redis.workspace = true
 deadpool = { version = "0.12.1", features = ["serde"] }
 base64.workspace = true
+minijinja.workspace = true
+derive_axum_errors = {version = "*", path = "../macros/derive_axum_errors"}
+axum.workspace = true
+tracing.workspace = true
+serde_json.workspace = true

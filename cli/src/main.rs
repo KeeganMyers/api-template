@@ -40,8 +40,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
     match Command::parse() {
         Command::Api => {
-            env_logger::init();
             let env = Env::from_env()?;
+            env_logger::init();
             let app_state = ModelState::from_env(env).await?;
             let server_handle = start_server(app_state);
             let _ = server_handle.await;

@@ -1,9 +1,10 @@
 mod controllers;
 mod error;
 mod extractors;
+mod macros;
 mod middleware;
 
-use crate::controllers::auth;
+use crate::controllers::{auth, user};
 use crate::error::ApiError;
 use axum::{
     http::StatusCode,
@@ -28,6 +29,9 @@ async fn healthcheck() -> (StatusCode, &'static str) {
 pub(crate) fn routes(app_state: Arc<ModelState>) -> Router {
     Router::new()
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
+        .route("/", get(frontend::index::index))
+        .route("/users", get(user::get_users))
+        .route("/users/:id", get(user::get_user))
         .route("/healthcheck", get(healthcheck))
         .route("/auth_login", post(auth::auth_login))
         .route("/auth_signup", post(auth::auth_signup))

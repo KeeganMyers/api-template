@@ -120,6 +120,7 @@ dependencies = [
  "casdoor-rust-sdk",
  "derive_axum_errors",
  "env_logger",
+ "frontend",
  "http 1.2.0",
  "log",
  "model",
@@ -921,6 +922,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "frontend"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "minijinja",
+ "minijinja-embed",
+ "model",
+ "util",
+]
+
+[[package]]
 name = "futures"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1670,6 +1682,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
+name = "memo-map"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38d1115007560874e373613744c6fba374c17688327a71c1476d1a5954cc857b"
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1684,6 +1702,25 @@ dependencies = [
  "mime",
  "unicase",
 ]
+
+[[package]]
+name = "minijinja"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c37e1b517d1dcd0e51dc36c4567b9d5a29262b3ec8da6cb5d35e27a8fb529b5"
+dependencies = [
+ "memo-map",
+ "self_cell",
+ "serde",
+ "serde_json",
+ "v_htmlescape",
+]
+
+[[package]]
+name = "minijinja-embed"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46d70b7597f2d4149308210d5dc7ab79f1248238a27c1ab1a3eefd95d20c4cca"
 
 [[package]]
 name = "minimal-lexical"
@@ -1725,6 +1762,7 @@ dependencies = [
  "derive_query",
  "derive_update_model",
  "log",
+ "minijinja",
  "reqwest 0.12.9",
  "serde",
  "serde_json",
@@ -2494,6 +2532,12 @@ dependencies = [
  "core-foundation-sys",
  "libc",
 ]
+
+[[package]]
+name = "self_cell"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2fdfc24bc566f839a2da4c4295b82db7d25a24253867d5c64355abb5799bdbe"
 
 [[package]]
 name = "serde"
@@ -3427,17 +3471,22 @@ name = "util"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "axum",
  "base64 0.22.1",
  "deadpool",
  "deadpool-redis",
+ "derive_axum_errors",
  "dotenv",
  "envy",
+ "minijinja",
  "redis",
  "serde",
+ "serde_json",
  "sqlx",
  "thiserror 2.0.3",
  "tokio",
  "tokio-test",
+ "tracing",
  "utoipa",
  "uuid",
 ]
@@ -3506,6 +3555,12 @@ dependencies = [
  "getrandom",
  "serde",
 ]
+
+[[package]]
+name = "v_htmlescape"
+version = "0.15.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e8257fbc510f0a46eb602c10215901938b5c2a7d5e70fc11483b1d3c9b5b18c"
 
 [[package]]
 name = "vcpkg"
